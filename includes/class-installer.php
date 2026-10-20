@@ -14,7 +14,6 @@ final class Installer {
             }
         }
         self::schema();
-        add_role('portal_push_member', 'Pessoa do portal', ['read' => true]);
         $role = get_role('administrator');
         if ($role) {
             $role->add_cap('manage_portal_push');
@@ -105,6 +104,17 @@ final class Installer {
         foreach ($tables as $sql) {
             dbDelta($sql);
         }
+        self::migrate_legacy_audiences();
+    }
+
+    public static function migrate_legacy_audiences(): void {
+        global $wpdb;
+        $campaigns = $wpdb->prefix . 'ppush_campaigns';
+        $deliveries = $wpdb->prefix . 'ppush_deliveries';
+        $wpdb->query("UPDATE $deliveries SET status='cancelled' WHERE status='pending' AND campaign_id IN (SELECT id FROM $campaigns WHERE audience_type='profiles')");
+        $count = $wpdb->query($wpdb->prepare("UPDATE $campaigns SET status='cancelled',finished_at=%s,last_error=%s WHERE audience_type='profiles' AND status IN ('scheduled','queued')", gmdate('Y-m-d H:i:s'), 'Campanha anterior à versão 0.3.0 cancelada: selecione os perfis do WordPress e crie um novo envio.'));
+        if ($count) { update_option('ppush_legacy_campaigns_cancelled', (int)get_option('ppush_legacy_campaigns_cancelled', 0) + $count, false); }
+        // Tabelas antigas e o papel portal_push_member já existente são preservados.
     }
 
     public static function deactivate(): void {

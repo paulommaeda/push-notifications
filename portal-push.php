@@ -2,8 +2,8 @@
 /**
  * Plugin Name: Portal Push — Pessoas e Perfis
  * Plugin URI: https://github.com/paulommaeda/push-notifications
- * Description: Notificações Web Push com núcleo próprio, pessoas e perfis do portal.
- * Version: 0.2.0
+ * Description: Push no navegador e no PWA, por pessoa ou perfil dos usuários do WordPress.
+ * Version: 0.3.0
  * Author: Paulo Maeda
  * Author URI: https://paulomaeda.com
  * Requires at least: 6.4
@@ -15,7 +15,7 @@
 
 defined('ABSPATH') || exit;
 
-define('PPUSH_VERSION', '0.2.0');
+define('PPUSH_VERSION', '0.3.0');
 define('PPUSH_FILE', __FILE__);
 define('PPUSH_DIR', plugin_dir_path(__FILE__));
 define('PPUSH_URL', plugin_dir_url(__FILE__));
@@ -23,6 +23,8 @@ define('PPUSH_URL', plugin_dir_url(__FILE__));
 // O atualizador funciona mesmo se as dependências do restante do plugin estiverem incompletas.
 require_once PPUSH_DIR . 'includes/class-updater.php';
 \PauloMaeda\PortalPush\Updater::boot();
+require_once PPUSH_DIR . 'includes/class-pwa.php';
+\PauloMaeda\PortalPush\Pwa::boot();
 
 require_once PPUSH_DIR . 'includes/class-installer.php';
 register_activation_hook(__FILE__, ['PauloMaeda\\PortalPush\\Installer', 'activate']);

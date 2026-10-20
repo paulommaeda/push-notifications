@@ -4,72 +4,65 @@ namespace PauloMaeda\PortalPush;
 defined('ABSPATH') || exit;
 
 final class Audience {
-    public static function profiles(): array {
-        global $wpdb;
-        return $wpdb->get_results('SELECT p.*, (SELECT COUNT(*) FROM ' . Core::table('memberships') . ' m WHERE m.profile_id=p.id) AS members FROM ' . Core::table('profiles') . ' p ORDER BY p.name');
+    /** Os perfis são os papéis registrados no próprio WordPress, inclusive os personalizados. */
+    public static function roles(): array {
+        $roles = [];
+        foreach (wp_roles()->roles as $slug => $role) {
+            $roles[$slug] = translate_user_role($role['name']);
+        }
+        return $roles;
     }
 
-    public static function user_profiles(int $user_id): array {
-        global $wpdb;
-        return array_map('intval', $wpdb->get_col($wpdb->prepare('SELECT profile_id FROM ' . Core::table('memberships') . ' WHERE user_id=%d', $user_id)));
+    public static function user_roles(int $user_id): array {
+        $user = get_userdata($user_id);
+        return $user ? array_values(array_intersect($user->roles, array_keys(self::roles()))) : [];
     }
 
-    public static function set_profiles(int $user_id, array $ids): true|\WP_Error {
-        global $wpdb;
-        if (!get_userdata($user_id)) {
-            return new \WP_Error('ppush_user', 'Pessoa não encontrada.');
+    public static function validate_roles($values): array|\WP_Error {
+        if (!is_array($values) || !$values) {
+            return new \WP_Error('ppush_role', 'Selecione pelo menos um perfil do WordPress.');
         }
-        $ids = Core::ids($ids);
-        $valid = array_map(static fn($p) => (int)$p->id, self::profiles());
-        if (array_diff($ids, $valid)) {
-            return new \WP_Error('ppush_profile', 'Um dos perfis não existe mais.');
-        }
-        $existing = self::user_profiles($user_id);
-        foreach ($ids as $id) {
-            if (in_array($id, $existing, true)) {
-                continue;
-            }
-            if (false === $wpdb->insert(Core::table('memberships'), ['profile_id' => $id, 'user_id' => $user_id], ['%d', '%d'])) {
-                return new \WP_Error('ppush_database', 'Não foi possível salvar os perfis.');
+        $valid = self::roles();
+        foreach ($values as $value) {
+            if (!is_string($value) || !isset($valid[$value])) {
+                return new \WP_Error('ppush_role', 'Um dos perfis selecionados não existe no WordPress.');
             }
         }
-        foreach (array_diff($existing, $ids) as $id) {
-            $wpdb->delete(Core::table('memberships'), ['user_id' => $user_id, 'profile_id' => $id], ['%d', '%d']);
-        }
-        return true;
+        return array_values(array_unique($values));
     }
 
     public static function matches(int $user_id, object $campaign): bool {
         if (!Core::enabled($user_id)) {
             return false;
         }
-        $ids = Core::ids(json_decode($campaign->audience_ids, true));
-        return match ($campaign->audience_type) {
-            'all' => true,
-            'people' => in_array($user_id, $ids, true),
-            'profiles' => (bool)array_intersect($ids, self::user_profiles($user_id)),
-            default => false,
-        };
+        $values = json_decode($campaign->audience_ids, true);
+        if ($campaign->audience_type === 'all') { return true; }
+        if ($campaign->audience_type === 'people') {
+            return in_array($user_id, Core::ids($values), true);
+        }
+        if ($campaign->audience_type === 'roles') {
+            $roles = self::validate_roles($values);
+            return !is_wp_error($roles) && (bool)array_intersect($roles, self::user_roles($user_id));
+        }
+        // Grupos antigos não são convertidos em papéis nem em envio geral.
+        return false;
     }
 
-    /** Perfis combinados por OU; DISTINCT evita duplicidade entre perfis. */
+    /** Papéis combinados por OU; cada inscrição aparece uma única vez. */
     public static function subscriptions(object $campaign): array {
         global $wpdb;
-        $ids = Core::ids(json_decode($campaign->audience_ids, true));
-        $s = Core::table('subscriptions');
-        $m = Core::table('memberships');
-        $where = 's.active=1';
-        if ($campaign->audience_type !== 'all' && !$ids) {
-            return [];
-        }
+        $where = 'active=1';
         if ($campaign->audience_type === 'people') {
-            $where .= ' AND s.user_id IN (' . implode(',', $ids) . ')';
-        } elseif ($campaign->audience_type === 'profiles') {
-            $where .= ' AND EXISTS (SELECT 1 FROM ' . $m . ' m WHERE m.user_id=s.user_id AND m.profile_id IN (' . implode(',', $ids) . '))';
+            $ids = Core::ids(json_decode($campaign->audience_ids, true));
+            if (!$ids) { return []; }
+            $where .= ' AND user_id IN (' . implode(',', $ids) . ')';
+        } elseif ($campaign->audience_type === 'roles') {
+            if (is_wp_error(self::validate_roles(json_decode($campaign->audience_ids, true)))) { return []; }
         } elseif ($campaign->audience_type !== 'all') {
             return [];
         }
-        $rows = $wpdb->get_results("SELECT DISTINCT s.id,s.user_id FROM $s s WHERE $where");
-        return array_values(array_filter($rows, static fn($row) => Core::enabled((int)$row->user_id)));
+        $rows = $wpdb->get_results('SELECT id,user_id FROM ' . Core::table('subscriptions') . ' WHERE ' . $where);
+        cache_users(array_values(array_unique(array_map(static fn($row) => (int)$row->user_id, $rows))));
+        return array_values(array_filter($rows, static fn($row) => self::matches((int)$row->user_id, $campaign)));
     }
 }

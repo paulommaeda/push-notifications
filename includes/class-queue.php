@@ -93,6 +93,7 @@ final class Queue {
         $wpdb->update($d, ['click_hash' => hash('sha256', $click_token)], ['id' => $delivery->id]);
         $settings = Core::settings();
         $payload = [
+            'portalPush' => 1,
             'title' => $campaign->title, 'body' => $campaign->message, 'url' => $campaign->url,
             'icon' => $settings['icon'] ?: get_site_icon_url(192), 'image' => $campaign->image,
             'tag' => 'portal-push-' . $campaign->id, 'campaign' => (int)$campaign->id,

@@ -2,6 +2,7 @@
 """Gera ZIP e manifesto para publicação atômica no branch main do GitHub."""
 import argparse
 import hashlib
+import html
 import json
 import re
 import zipfile
@@ -26,7 +27,7 @@ def main():
     readme = (ROOT / 'readme.txt').read_text()
     version = field(main_file, 'Version')
     if not re.fullmatch(r'\d{1,5}\.\d{1,5}\.\d{1,5}', version):
-        raise ValueError('A versão deve ser estável, no formato 0.2.0.')
+        raise ValueError('A versão deve ser estável, no formato 1.2.3.')
     if field(main_file, 'Update URI') != REPO or field(readme, 'Stable tag') != version:
         raise ValueError('Confira Update URI e Stable tag.')
     if not re.search(r"define\('PPUSH_VERSION',\s*'" + re.escape(version) + r"'\)", main_file):
@@ -64,6 +65,10 @@ def main():
             raise ValueError('ZIP corrompido.')
         for path in ['portal-push.php', 'vendor/autoload.php', 'includes/class-updater.php']:
             archive.getinfo('portal-push/' + path)
+    changelog = re.search(r'^= ' + re.escape(version) + r' =\n(.*?)(?=^= |^== |\Z)', readme, re.M | re.S)
+    if not changelog:
+        raise ValueError('Histórico da versão ausente em readme.txt.')
+    changes = [line[2:].strip() for line in changelog.group(1).splitlines() if line.startswith('* ')]
     metadata = {
         'schema': 1, 'name': 'Portal Push — Pessoas e Perfis', 'slug': 'portal-push', 'version': version,
         'homepage': REPO, 'requires': field(main_file, 'Requires at least'),
@@ -72,9 +77,9 @@ def main():
         'sha256': hashlib.sha256(output.read_bytes()).hexdigest(),
         'last_updated': datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S'),
         'sections': {
-            'description': '<p>Notificações Web Push com núcleo próprio, cadastro de pessoas, múltiplos perfis e envio segmentado para portais WordPress.</p>',
-            'installation': '<p>Instale o ZIP pelo painel, gere as chaves de envio e crie a página com o shortcode [portal_push]. Cada pessoa autoriza o recebimento no próprio dispositivo.</p>',
-            'changelog': '<h4>' + version + '</h4><p>Atualizações nativas pelo WordPress a partir do GitHub, instalação automática opcional, verificação SHA-256 do pacote e preservação do diretório do plugin.</p>',
+            'description': '<p>Push no navegador e no PWA instalado, com núcleo próprio e segmentação pelos usuários e papéis do WordPress.</p>',
+            'installation': '<p>Instale o ZIP pelo painel e gere as chaves. Cada usuário entra no portal e ativa as notificações no dispositivo. A página com [portal_push] é opcional para gerenciar dispositivos.</p>',
+            'changelog': '<h4>' + version + '</h4><ul>' + ''.join('<li>' + html.escape(change) + '</li>' for change in changes) + '</ul>',
         },
     }
     (updates / 'portal-push.json').write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + '\n')

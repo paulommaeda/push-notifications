@@ -15,7 +15,7 @@ final class Privacy {
         });
         add_action('admin_init', static function (): void {
             if (function_exists('wp_add_privacy_policy_content')) {
-                wp_add_privacy_policy_content('Portal Push', '<p>As notificações do portal são opcionais e exigem autorização no dispositivo. Armazenamos o vínculo com a conta, os perfis atribuídos pela administração, os dados técnicos da inscrição push, uma descrição do dispositivo e o histórico de disparos e cliques. Os envios são processados pela hospedagem do portal e encaminhados ao serviço de push do navegador (Google, Mozilla, Apple ou Microsoft). Não coletamos a localização nem armazenamos IPs neste plugin. A pessoa pode pausar cada dispositivo na página de notificações. Ajuste este texto às práticas e ao prazo de retenção da sua instituição.</p>');
+                wp_add_privacy_policy_content('Portal Push', '<p>As notificações do portal são opcionais e exigem autorização no dispositivo. Armazenamos o vínculo com a conta, os papéis do WordPress usados na segmentação, os dados técnicos da inscrição push, uma descrição do dispositivo e o histórico de disparos e cliques. Os envios são processados pela hospedagem do portal e encaminhados ao serviço de push do navegador (Google, Mozilla, Apple ou Microsoft). Não coletamos a localização nem armazenamos IPs neste plugin. A pessoa pode pausar cada dispositivo na página de gerenciamento. Ajuste este texto às práticas e ao prazo de retenção da sua instituição.</p>');
             }
         });
     }
@@ -39,14 +39,11 @@ final class Privacy {
         $rows = $wpdb->get_results($wpdb->prepare('SELECT id,label,active,created_at,last_seen_at FROM ' . Core::table('subscriptions') . ' WHERE user_id=%d ORDER BY id LIMIT %d OFFSET %d', $user->ID, $batch, max(0, $page - 1) * $batch));
         $data = [];
         if ($page === 1) {
-            $names = [];
-            foreach (Audience::profiles() as $profile) {
-                if (in_array((int)$profile->id, Audience::user_profiles($user->ID), true)) { $names[] = $profile->name; }
-            }
+            $names = array_intersect_key(Audience::roles(), array_flip(Audience::user_roles($user->ID)));
             $data[] = [
                 'group_id' => 'portal-push', 'group_label' => 'Portal Push', 'item_id' => 'ppush-account-' . $user->ID,
                 'data' => [
-                    ['name' => 'Perfis', 'value' => implode(', ', $names)],
+                    ['name' => 'Perfis do WordPress', 'value' => implode(', ', $names)],
                     ['name' => 'Recebimento', 'value' => Core::enabled($user->ID) ? 'Habilitado' : 'Desativado'],
                 ],
             ];

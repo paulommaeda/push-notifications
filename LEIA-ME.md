@@ -1,98 +1,94 @@
-# Portal Push — Pessoas e Perfis
+# Portal Push — Guia da versão 0.3.0
 
-Versão **0.2.0**, desenvolvida para um portal WordPress com contas autenticadas. O pacote contém o código-fonte e as bibliotecas necessárias para instalar o plugin.
+## Onde o aviso aparece
 
-## O que está pronto
+A notificação aparece na área de notificações do navegador ou do sistema do celular, inclusive quando o portal está instalado como PWA. A pessoa toca no aviso para abrir o link indicado pela administração. Ela não precisa manter uma página de notificações aberta. A exibição depende da autorização, da conexão e das configurações do navegador/sistema.
 
-| Recurso | Comportamento |
+A página opcional com `[portal_push]` serve para autorizar, enviar um teste e pausar dispositivos. Ela não guarda uma caixa de mensagens lidas/não lidas.
+
+## Pessoas e perfis
+
+| Escolha do envio | Destinatários |
 |---|---|
-| Pessoas | Utiliza as contas existentes do WordPress e permite cadastrar novas contas com acesso básico. |
-| Perfis | Grupos de destinatários próprios do portal; cada pessoa pode pertencer a vários. |
-| Dispositivos | Inscrição individual com autorização do navegador; até 50 dispositivos ativos por pessoa. |
-| Campanhas | Envio para pessoas específicas, para qualquer um dos perfis selecionados ou para todos os habilitados. |
-| Agendamento | Datas no fuso do WordPress, armazenamento em UTC, validade para dispositivos offline e cancelamento de pendências. |
-| Relatórios | Histórico de campanhas, aceitação pelo serviço, falhas, tentativas e cliques únicos por dispositivo. |
-| Portal | Página com login, perfis da pessoa, botão de ativação, teste e pausa de dispositivos. |
-| Integrações | Função PHP para outros plugins colocarem avisos na fila. |
+| Pessoas específicas | Contas selecionadas do WordPress, pelo ID do usuário. |
+| Perfis do WordPress | Pessoas que possuem um dos papéis selecionados: Assinante, Editor ou papéis personalizados já registrados no portal. |
+| Todas as pessoas habilitadas | Usuários com recebimento permitido e dispositivos ativos. |
 
-O processamento fica na sua hospedagem. Não exige conta em plataforma comercial, projeto Firebase ou assinatura de API de notificações. As bibliotecas abertas incluídas executam localmente a assinatura VAPID e a criptografia Web Push. A entrega usa o serviço de push do navegador da pessoa (Google, Mozilla, Apple ou Microsoft).
+O cadastro e a alteração de papéis acontecem em **Usuários** no WordPress. A seleção de um perfil para envio não concede acesso nem altera a conta. Não há outro cadastro de grupos no plugin.
 
-## Instalação e configuração
+Papéis selecionados são combinados por **OU**. Um dispositivo recebe uma vez por campanha, mesmo se o usuário tiver vários papéis selecionados. Uma pessoa com celular e computador inscritos poderá receber em ambos.
 
-1. No WordPress, vá a **Plugins → Adicionar plugin → Enviar plugin** e envie o ZIP.
-2. Ative **Portal Push — Pessoas e Perfis**.
-3. Abra **Portal Push → Configurações** e confira o e-mail técnico. Ele identifica o responsável pelo envio; não dispara e-mails.
-4. Clique em **Gerar chaves no servidor**. As chaves são geradas uma vez e preservadas.
-5. Clique em **Criar página de notificações**. Também é possível inserir `[portal_push]` em uma página comum do WordPress e selecioná-la nas configurações.
-6. Em **Perfis**, crie os grupos, por exemplo Equipe, Clientes e Gestores.
-7. Em **Pessoas**, use **Editar perfis** nas contas existentes ou cadastre uma nova pessoa. No cadastro novo, informe nome, e-mail e senha inicial com pelo menos 12 caracteres. O plugin não envia credenciais por e-mail.
-8. Compartilhe o endereço da página pelos seus canais habituais. Cada pessoa deve entrar com a conta WordPress e clicar em **Ativar neste dispositivo**.
-9. Em **Nova notificação**, escolha o público, escreva a mensagem, informe um link do próprio portal e crie a campanha.
+O público é calculado quando a campanha fica disponível para envio. Antes de cada disparo, o plugin verifica novamente os papéis atuais, o recebimento habilitado e o vínculo do dispositivo. Quem perder o papel selecionado deixa de ser elegível; usuários adicionados depois da expansão da fila entram nos próximos envios.
 
-Instale inicialmente em homologação. O envio real precisa ser validado no domínio HTTPS do portal e nos navegadores usados pelas pessoas.
+## Instalar e configurar
 
-## Requisitos da hospedagem
+1. Envie `portal-push-0.3.0.zip` por **Plugins → Adicionar plugin → Enviar plugin** e ative. Se houver versão anterior, substitua pelo painel.
+2. Abra **Portal Push → Configurações**, confira o e-mail técnico e clique em **Gerar chaves no servidor**. O e-mail identifica o emissor; essa configuração não envia e-mails.
+3. Confira os usuários e papéis existentes no WordPress. Para novas contas, use **Usuários → Adicionar novo**.
+4. Cada pessoa entra no portal e clica em **Ativar notificações** no dispositivo em que quer receber os avisos. A solicitação de permissão aparece depois desse clique.
+5. Em **Nova notificação**, escolha pessoas, perfis ou todos, preencha título, mensagem e link do portal e crie a campanha.
+6. Se desejar gerenciamento detalhado, crie uma página com `[portal_push]` pelo botão das configurações ou insira o shortcode em uma página comum.
 
-- WordPress 6.4 ou posterior.
-- PHP 8.2 ou posterior, com OpenSSL, cURL e mbstring.
-- Site publicado por HTTPS e conexões HTTPS de saída liberadas para os serviços de push dos navegadores.
-- GMP ou BCMath são opcionais e ajudam no desempenho criptográfico.
-- Banco de dados e arquivo `wp-config.php` incluídos na rotina de backup; preserve também as chaves de envio.
+O convite nas páginas aparece somente para usuários conectados e habilitados. A pessoa pode dispensá-lo por sete dias. Nas configurações é possível desligar o convite e manter a ativação na página opcional.
 
-O ZIP já inclui `vendor/`. Não é necessário executar Composer na hospedagem. As dependências foram isoladas no namespace `PortalPushVendor` para reduzir conflitos com outros plugins.
+Criar uma conta ou conhecer seu e-mail não autoriza o push. Cada navegador/instalação do PWA precisa da autorização da pessoa. O limite é de 50 dispositivos ativos por conta.
 
-## Atualizações pelo WordPress
+Ao fazer logout do WordPress, o navegador identificado é pausado; outros dispositivos continuam ativos. Entrar novamente não reativa uma inscrição pausada sem novo clique. A troca de conta no mesmo navegador requer ativação explícita e a prova local do dispositivo.
 
-A partir da versão 0.2.0, o plugin consulta o manifesto público do repositório [paulommaeda/push-notifications](https://github.com/paulommaeda/push-notifications) e apresenta as próximas versões na tela **Plugins**. O ZIP baixado é verificado pelo SHA-256 antes da instalação.
+## Hospedagem
 
-Em **Portal Push → Configurações → Atualizações pelo WordPress**, você pode habilitar a instalação automática ou solicitar uma consulta imediata. A mesma preferência pode ser alterada na tela nativa de Plugins. O agendador, as permissões e as políticas da hospedagem continuam valendo.
+- WordPress 6.4+, PHP 8.2+, OpenSSL, cURL e mbstring.
+- HTTPS no portal e conexões HTTPS de saída para os serviços Web Push dos navegadores.
+- GMP ou BCMath são opcionais para melhorar o desempenho criptográfico.
+- Preserve banco e `wp-config.php` nos backups, incluindo as chaves de envio armazenadas no banco.
 
-Se estiver na versão 0.1.0, envie o ZIP 0.2.0 pelo painel uma vez, substituindo a instalação atual. As próximas atualizações poderão usar o mecanismo novo. Pessoas, perfis, dispositivos e chaves são preservados.
+O ZIP inclui as dependências isoladas em `PortalPushVendor`; não precisa executar Composer na hospedagem. O núcleo executa localmente a assinatura VAPID e a criptografia. Não exige conta em plataforma comercial nem projeto Firebase. A entrega ao dispositivo passa pelos serviços de push do navegador/sistema.
 
-## Pessoas, perfis e autorização
+## PWA instalado
 
-- Criar uma conta não autoriza o recebimento. É preciso ativar cada navegador/dispositivo.
-- O papel **Pessoa do portal** criado para novas contas possui apenas a capacidade básica `read`.
-- Os perfis organizam os destinatários e não concedem acesso a páginas, cursos ou áreas restritas. Essa autorização permanece com o portal e com os papéis do WordPress.
-- Os perfis são atribuídos pela administração; as pessoas não podem se incluir em outros grupos.
-- Campanhas por perfis combinam os grupos por **OU**. Quem participa de vários grupos recebe uma vez em cada dispositivo ativo naquela campanha.
-- A composição do público é calculada quando a campanha fica disponível para envio. Antes de cada disparo, o plugin verifica novamente pessoa, perfil e propriedade do dispositivo.
-- A desativação do recebimento de uma pessoa bloqueia os disparos e novas inscrições. A conta continua existindo.
-- Ao sair pelo logout do WordPress, o navegador identificado é pausado; os demais dispositivos permanecem ativos. A troca de conta no mesmo navegador requer ativação explícita e prova local do dispositivo.
+**PWA for WP e SuperPWA:** o Portal Push incorpora seu módulo de eventos ao worker existente pelos filtros de geração desses plugins. O aplicativo continua usando seu manifesto, cache e navegação. Ao abrir o painel depois da atualização, os arquivos de worker são regenerados. Feche e reabra todas as janelas do portal/aplicativo para ativar a nova versão; limpe o cache do worker na hospedagem/CDN se ele ainda servir o arquivo antigo.
 
-## Fila, horários e relatórios
+Antes de cadastrar o dispositivo, o cliente pede uma confirmação ao worker ativo. Se ele ainda não tiver o módulo, a inscrição é interrompida com uma orientação de atualização. O plugin não substitui um worker de outro PWA. Mantenha apenas um emissor push nesse mesmo registro; ao migrar de outro serviço, o clique explícito de ativação troca a inscrição para a chave VAPID local.
 
-Confira **Configurações → Geral → Fuso horário** no WordPress. Para o Brasil, pode utilizar uma cidade como `America/Sao_Paulo`.
+**Outros PWAs:** o desenvolvedor pode acrescentar o módulo ao JavaScript gerado do worker:
 
-A fila é persistida em tabelas próprias e executada por WP-Cron a cada minuto. Cada rodada trabalha por até aproximadamente 20 segundos, com no máximo 100 inscrições e até 6 segundos de espera por requisição. Esses limites protegem o tempo de execução; o volume efetivo depende da hospedagem e da latência de rede. Esta versão ainda não foi submetida a teste de carga.
-
-Para horários previsíveis em um portal com pouco tráfego, configure a hospedagem para chamar `wp-cron.php` a cada minuto. Se houver WP-CLI disponível:
-
-```bash
-wp cron event run --due-now --path=/caminho/do/wordpress
+```php
+$worker_javascript = \PauloMaeda\PortalPush\Pwa::inject($worker_javascript);
 ```
 
-O botão **Processar fila agora** executa uma rodada manual. Falhas transitórias, como HTTP 429 ou 5xx, têm até três tentativas, com espera crescente e respeito ao `Retry-After`. HTTP 404/410 pausa uma inscrição expirada.
+Use esse código no filtro de geração do worker do seu PWA, com o Portal Push carregado, e regenere o arquivo. O módulo contém os eventos de push, clique e confirmação de suporte; não registra eventos de instalação/ativação nem assume o cache. Ele ignora mensagens e cliques que não pertençam ao Portal Push. A integração deve ser homologada com o PWA específico do portal.
 
-O estado **Aceita pelo serviço** indica que o provedor de push aceitou a requisição. Isso não comprova exibição nem leitura. O relatório de cliques conta uma vez por dispositivo. Uma queda entre o envio e a gravação do resultado pode exigir nova tentativa; a identificação estável da notificação reduz sua duplicação visual, mas a entrega não oferece garantia de “exatamente uma vez”.
+**Sem outro plugin PWA:** o Portal Push fornece um worker para notificações e um manifesto básico com abertura independente. Não acrescenta navegação offline. Configure o ícone do site no WordPress para fornecer os ícones do manifesto.
 
-## Celulares e PWA
+**iPhone/iPad:** o fluxo Web Push padrão requer iOS/iPadOS 16.4+, portal adicionado à Tela de Início e aberto pelo ícone. A autorização parte de um toque da pessoa. No Android e no computador, utilize um navegador com suporte a Web Push; o PWA instalado usa o mesmo módulo de notificações.
 
-No iPhone/iPad, o fluxo Web Push padrão requer iOS/iPadOS 16.4 ou posterior, portal adicionado à Tela de Início e aberto pelo ícone. A autorização deve partir de um toque da pessoa. O plugin apresenta essa orientação na página.
-
-Esta versão fornece um manifesto básico e um service worker para notificações; não implementa navegação offline. Se o portal já utiliza outro service worker/PWA, o plugin detecta a situação e não o substitui. A integração com esse PWA precisa ser feita especificamente para o portal. O manifesto pode ser desabilitado por:
+O manifesto básico é desabilitado automaticamente quando PWA for WP ou SuperPWA está ativo. Para outro PWA que já forneça um manifesto:
 
 ```php
 add_filter('portal_push_disable_manifest', '__return_true');
 ```
 
-Utilize o shortcode no conteúdo de uma página comum. Widgets ou templates que não armazenem o shortcode em `post_content` precisam apontar essa página em Configurações para o carregamento dos recursos.
+Exclua do cache de páginas as telas autenticadas e os endpoints do plugin, inclusive `/wp-json/portal-push/` e a forma `?rest_route=/portal-push/`. Os nonces e dados de uma sessão não devem ser reutilizados por outra conta. Teste essas exclusões também no cache do PWA.
 
-## Integração com outros plugins
+## Fila e relatórios
 
-O código de um plugin confiável pode chamar `portal_push_send()` depois de o Portal Push ter sido carregado. A função cria uma campanha; o disparo acontece pela fila. Ela retorna o ID da campanha ou `WP_Error`.
+Os horários acompanham **Configurações → Geral → Fuso horário**, com armazenamento em UTC. A fila persistente roda pelo WP-Cron a cada minuto, com até aproximadamente 20 segundos de trabalho, 100 inscrições por rodada e 6 segundos de espera por requisição. O volume efetivo depende da hospedagem e da latência; não houve teste de carga.
 
-### Enviar para uma pessoa
+Em portais com poucas visitas, configure a hospedagem para executar `wp-cron.php` a cada minuto. Com WP-CLI:
+
+```bash
+wp cron event run --due-now --path=/caminho/do/wordpress
+```
+
+**Processar fila agora** executa uma rodada manual. Falhas transitórias (HTTP 429/5xx) têm até três tentativas com espera crescente e respeito a `Retry-After`. Inscrições expiradas (404/410) são pausadas.
+
+**Aceita pelo serviço** informa que o serviço do navegador aceitou a requisição. Não comprova exibição ou leitura. O relatório registra um clique por dispositivo. O sistema não garante entrega imediata ou exatamente uma vez; a identificação estável da campanha reduz duplicação visual.
+
+## API PHP do portal
+
+Um plugin confiável pode chamar `portal_push_send()` depois do carregamento do Portal Push. A função cria uma campanha na fila e retorna seu ID ou `WP_Error`.
+
+Enviar para uma conta:
 
 ```php
 $campaign_id = portal_push_send([
@@ -100,38 +96,42 @@ $campaign_id = portal_push_send([
     'message' => 'Acesse o portal para consultar os detalhes.',
     'url' => home_url('/minhas-tarefas/'),
     'audience_type' => 'people',
-    'audience_ids' => [123], // ID da conta WordPress, não o e-mail.
+    'audience_ids' => [123], // ID do usuário WordPress.
 ]);
 ```
 
-### Enviar para um ou mais perfis
+Enviar por papéis do WordPress:
 
 ```php
 $campaign_id = portal_push_send([
-    'title' => 'Aviso para a equipe',
+    'title' => 'Aviso editorial',
     'message' => 'Confira a atualização no portal.',
     'url' => home_url('/avisos/'),
-    'audience_type' => 'profiles',
-    'audience_ids' => [2, 5], // IDs dos perfis próprios do Portal Push.
+    'audience_type' => 'roles',
+    'audience_ids' => ['editor', 'author'], // Slugs existentes de papéis do WordPress.
     'ttl' => 86400,
     // Opcional: 'scheduled_at' => '2026-12-01 15:00:00', em UTC.
 ]);
 
 if (is_wp_error($campaign_id)) {
-    // Registre ou apresente o erro de acordo com o fluxo do seu plugin.
+    // Apresente ou registre o erro no fluxo do seu portal.
 }
 ```
 
-Para envio geral, use `audience_type => 'all'`. Um público de pessoas/perfis vazio é rejeitado, sem ser convertido em envio geral. O título aceita até 80 caracteres e a mensagem, 300; o payload total também é validado para respeitar os limites Web Push. O destino deve pertencer à mesma origem do portal.
+Para envio geral, use `audience_type => 'all'`. Público vazio, papel desconhecido e antigos IDs de grupos são rejeitados; não se transformam em envio geral. O título aceita 80 caracteres, a mensagem 300 e o payload total até 3.500 bytes. O link deve pertencer à mesma origem do portal.
 
-Gatilhos de publicação de posts, integrações específicas com WooCommerce/ERP e painel centralizado entre sites não fazem parte desta primeira versão. Podem utilizar a API PHP acima ou ser acrescentados depois.
+## Atualizações e migração
 
-## Privacidade e manutenção
+O atualizador, presente desde 0.2.0, consulta o manifesto público no GitHub e disponibiliza a versão na tela **Plugins**. O ZIP é validado pelo SHA-256. Em **Portal Push → Configurações → Atualizações pelo WordPress**, habilite a instalação automática ou solicite uma consulta imediata. O processo respeita WP-Cron, permissões e políticas da hospedagem.
 
-O plugin armazena as associações a perfis, inscrições técnicas dos dispositivos, campanhas e resultados de disparos/cliques. Não coleta localização e não grava IPs. Os endpoints e os segredos dos dispositivos não são expostos na listagem da API.
+Se ainda estiver em 0.1.0, envie o ZIP atual manualmente uma vez para acrescentar o atualizador.
 
-As ferramentas nativas **Exportar dados pessoais** e **Apagar dados pessoais** incluem os dados do plugin. O apagamento preserva a conta WordPress e desativa o recebimento. Ao excluir uma conta, seus vínculos, inscrições e registros individuais são removidos.
+A migração para 0.3.0 preserva contas, papéis, chaves e inscrições. Campanhas pendentes destinadas aos antigos grupos próprios são canceladas: não existe equivalência automática com papéis do WordPress. Crie novas campanhas com o público correto. Os históricos e tabelas legados são preservados. O papel antigo `portal_push_member`, caso exista, permanece no WordPress para preservar o acesso; novas instalações não o criam. Campanhas individuais continuam válidas.
 
-Por padrão, excluir o plugin preserva os dados. Para removê-los, desmarque a opção correspondente nas configurações antes da exclusão. As contas WordPress e o papel básico das pessoas são preservados.
+## Privacidade e limites
 
-O teste local e os limites conhecidos estão em `VALIDACAO.md`. As licenças das bibliotecas acompanham os respectivos diretórios em `vendor/`.
+O plugin guarda vínculo com a conta, inscrições técnicas, descrição dos dispositivos, campanhas e resultados de envios/cliques. Os papéis são consultados no WordPress. Não coleta localização nem armazena IPs. A API de listagem não expõe endpoints ou segredos.
+
+As ferramentas nativas de exportação/apagamento incluem esses dados. Apagar dados de push preserva a conta e seus papéis e desativa o recebimento. Excluir uma conta remove suas inscrições e entregas individuais. Por padrão, excluir o plugin preserva os dados; essa opção pode ser alterada nas configurações.
+
+Gatilhos automáticos por publicação de posts, regras por campos personalizados, integrações específicas com ERP e caixas de mensagens internas não estão incluídos. Podem utilizar a API PHP ou ser desenvolvidos depois. A validação executada e os pontos de homologação estão em [VALIDACAO.md](VALIDACAO.md).

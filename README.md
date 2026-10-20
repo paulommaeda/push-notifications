@@ -1,69 +1,73 @@
 # Portal Push — Pessoas e Perfis
 
-Plugin WordPress de Paulo Maeda para notificações Web Push em portais com pessoas autenticadas. O cadastro, os perfis, as chaves VAPID, a fila e os relatórios ficam na hospedagem do WordPress.
+Notificações **push na área de avisos do navegador ou do smartphone**, inclusive com o PWA instalado. O toque na notificação abre o link escolhido no portal. A página opcional serve para ativar, testar e pausar dispositivos; não é uma caixa de mensagens.
 
-## Instalar a versão 0.2.0
+Os destinatários são os **usuários do WordPress**. Os perfis são seus **papéis**, como Assinante e Editor, incluindo os personalizados já existentes no portal. O plugin não cria grupos próprios de destinatários nem altera os papéis ao enviar uma campanha.
 
-[Baixar o ZIP instalável](https://raw.githubusercontent.com/paulommaeda/push-notifications/main/dist/portal-push-0.2.0.zip)
+## Instalar a versão 0.3.0
 
-No WordPress, abra **Plugins → Adicionar plugin → Enviar plugin**, selecione esse ZIP e ative. Se a versão 0.1.0 já estiver instalada, envie o ZIP e escolha a opção para substituir a versão atual. Essa instalação manual inicial acrescenta o atualizador às instalações antigas.
+[Baixar o ZIP instalável](https://raw.githubusercontent.com/paulommaeda/push-notifications/main/dist/portal-push-0.3.0.zip)
 
-O pacote é `dist/portal-push-0.2.0.zip`, com a pasta interna `portal-push/` e todas as dependências incluídas. Para instalar, prefira esse arquivo ao ZIP de código do botão Code do GitHub.
+No WordPress: **Plugins → Adicionar plugin → Enviar plugin**, selecione o ZIP e ative. Para uma instalação existente, escolha substituir a versão atual. A partir da versão 0.2.0, também é possível receber a atualização pelo painel.
+
+Use `dist/portal-push-0.3.0.zip`, que contém a pasta `portal-push/` e as dependências prontas. O ZIP do botão Code do GitHub é o repositório de desenvolvimento, não o pacote de instalação.
+
+## Como funciona
+
+1. A administração gera as chaves em **Portal Push → Configurações**.
+2. Cada pessoa entra com sua conta WordPress e clica em **Ativar notificações** no próprio dispositivo. O botão aparece nas páginas do portal para usuários conectados.
+3. A administração escolhe pessoas específicas, um ou mais papéis do WordPress ou todos os habilitados e cria a campanha.
+4. O servidor processa a fila, assina e criptografa a mensagem. O navegador/sistema exibe o aviso, inclusive quando a página não está aberta, conforme as permissões e condições do dispositivo.
+
+O núcleo, as chaves VAPID, as campanhas, a fila e os relatórios ficam na hospedagem do WordPress. Não é necessário contratar uma plataforma de notificações nem configurar um projeto Firebase. A entrega Web Push utiliza os serviços dos próprios navegadores/sistemas, como Google, Mozilla e Apple.
 
 ## Recursos
 
-- Contas WordPress existentes e cadastro de novas pessoas.
-- Vários perfis de destinatários por pessoa, independentes dos papéis de acesso.
-- Inscrição de vários dispositivos, com autorização pelo navegador.
-- Campanhas individuais, por um ou mais perfis ou para todos os habilitados.
-- Agendamento, cancelamento, tentativas de reenvio e relatórios por dispositivo.
-- Página de ativação/pausa com `[portal_push]` e API PHP `portal_push_send()`.
-- Atualizações pelo painel do WordPress e instalação automática opcional.
+- Usuários e papéis padrão ou personalizados lidos diretamente do WordPress.
+- Cadastro e alteração de contas pelas telas nativas de Usuários.
+- Até 50 dispositivos ativos por pessoa, com autorização individual.
+- Campanhas individuais, por papéis combinados por OU ou para todos os habilitados.
+- Agendamento, cancelamento, novas tentativas e relatórios por dispositivo.
+- Botão de ativação nas páginas e gerenciamento opcional com `[portal_push]`.
+- Integração do push ao worker de **PWA for WP** e **SuperPWA**.
+- API PHP `portal_push_send()` para integrar eventos do portal.
+- Atualização pelo painel do WordPress e instalação automática opcional.
 
-## Configurar o portal
+Requer WordPress 6.4+, PHP 8.2+, HTTPS, OpenSSL, cURL e mbstring. O ZIP inclui as dependências com namespaces isolados.
 
-1. Abra **Portal Push → Configurações** e gere as chaves no servidor.
-2. Crie a página de notificações pelo botão ou insira `[portal_push]` em uma página.
-3. Cadastre os perfis e associe as pessoas.
-4. Cada pessoa entra no portal e ativa os avisos no próprio dispositivo.
-5. Crie uma campanha e selecione as pessoas ou perfis destinatários.
+## PWA e celulares
 
-Requer WordPress 6.4+, PHP 8.2+, HTTPS e extensões OpenSSL, cURL e mbstring. As dependências estão incluídas em `vendor/`. Os serviços Web Push dos navegadores continuam responsáveis pela entrega aos dispositivos.
+PWA for WP e SuperPWA continuam responsáveis pelo aplicativo, manifesto e navegação. O Portal Push acrescenta os eventos de notificação ao worker deles. Depois da atualização, abra o painel uma vez e feche/reabra todas as janelas do portal/PWA para atualizar o worker. O cliente verifica se o worker ativo já possui a integração antes de cadastrar o dispositivo.
+
+Outros PWAs exigem integrar o módulo conforme [LEIA-ME.md](LEIA-ME.md). Um worker sem integração não é substituído. No iPhone/iPad, use iOS/iPadOS 16.4+ e abra o portal pelo ícone adicionado à Tela de Início antes de autorizar os avisos.
 
 ## Atualizações pelo painel
 
-O WordPress consulta `updates/portal-push.json`, publicado neste repositório, e baixa o ZIP versionado de `dist/`. O plugin verifica o SHA-256 antes de permitir a instalação.
+O WordPress consulta `updates/portal-push.json` neste repositório e baixa o pacote versionado de `dist/`. O plugin verifica seu SHA-256 antes da instalação.
 
-- **Atualizar com um clique:** na tela **Plugins**, use **Atualizar agora** quando houver uma versão nova.
-- **Instalar automaticamente:** em **Portal Push → Configurações → Atualizações pelo WordPress**, habilite a opção e salve. A mesma preferência está na coluna de atualizações automáticas da tela Plugins.
-- **Consultar imediatamente:** use **Verificar atualizações agora** nas configurações do plugin.
+- **Atualizar com um clique:** use **Atualizar agora** na tela Plugins quando houver versão nova.
+- **Instalar automaticamente:** ative a opção em **Portal Push → Configurações → Atualizações pelo WordPress** ou na tela Plugins.
+- **Consultar imediatamente:** clique em **Verificar atualizações agora** nas configurações.
 
-As consultas bem-sucedidas são armazenadas por seis horas; falhas temporárias, por quinze minutos. A instalação automática usa WP-Cron e respeita as permissões, os bloqueios de alterações de arquivos e as políticas da hospedagem.
+As consultas válidas ficam em cache por seis horas; falhas, por quinze minutos. O processo usa o mecanismo nativo do WordPress e respeita o agendador, as permissões e as políticas da hospedagem. Não requer token GitHub porque o repositório é público.
 
-As pessoas, os perfis, as inscrições e as chaves são mantidos no banco durante a atualização. O código de atualização é carregado mesmo se o restante do plugin estiver com dependências ausentes.
+Na migração para 0.3.0, contas, papéis, inscrições e chaves são preservados. **Campanhas pendentes dos grupos próprios das versões antigas são canceladas**: crie novos envios com os papéis do WordPress. As campanhas individuais continuam válidas. O antigo papel `portal_push_member`, quando já existir, é mantido para preservar o acesso das contas; novas instalações não o criam.
 
 ## Publicar a próxima versão
 
 1. Altere `Version` e `PPUSH_VERSION` em `portal-push.php` e `Stable tag` em `readme.txt`.
-2. Atualize documentação e histórico. Se houver mudança de dependências, mantenha o isolamento em `PortalPushVendor`; não substitua o `vendor/` pronto por uma instalação Composer sem o isolamento.
-3. Gere o pacote e o manifesto:
+2. Atualize o histórico em `readme.txt` e a documentação. Preserve o isolamento das dependências em `PortalPushVendor`.
+3. Execute `python3 tools/build-release.py` para gerar o pacote e o manifesto com o histórico da versão.
+4. Teste código, atualização e pacote em homologação.
+5. Publique código, ZIP novo em `dist/` e manifesto em `updates/` no mesmo commit de `main`.
 
-```bash
-python3 tools/build-release.py
-```
-
-4. Teste o plugin e o pacote em homologação.
-5. Publique o código, o novo ZIP em `dist/` e o manifesto em `updates/` juntos no mesmo commit de `main`.
-
-Cada versão publicada deve permanecer imutável. Para corrigir uma versão, aumente seu número e gere outro pacote. O script recusa sobrescrever um ZIP diferente com o mesmo número; `--allow-rebuild` serve apenas para preparação local de uma versão ainda não publicada. O comando gera arquivos locais; a publicação ocorre pelo Git.
-
-Não é necessário token GitHub no WordPress porque este repositório é público.
+Cada pacote publicado deve permanecer imutável. Aumente a versão para corrigir um pacote já publicado. `--allow-rebuild` só deve ser usado durante a preparação local de uma versão ainda não publicada. Não execute Composer sobre o `vendor/` isolado sem repetir o processo de isolamento.
 
 ## Documentação
 
-- [Guia de instalação e integração](LEIA-ME.md)
-- [Validação e limites conhecidos](VALIDACAO.md)
+- [Instalação, PWA e integração PHP](LEIA-ME.md)
+- [Testes e limites conhecidos](VALIDACAO.md)
 - [Histórico](readme.txt)
 - [Licença GPL](LICENSE.txt)
 
-Criptografia Web Push: minishlink/web-push 10.1.0 (MIT). As licenças das demais dependências acompanham os respectivos diretórios em `vendor/`.
+Criptografia local: minishlink/web-push 10.1.0 (MIT). As licenças das dependências acompanham seus diretórios em `vendor/`.

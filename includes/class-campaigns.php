@@ -10,12 +10,13 @@ final class Campaigns {
         $title = sanitize_text_field($data['title'] ?? '');
         $message = sanitize_textarea_field($data['message'] ?? '');
         $type = sanitize_key($data['audience_type'] ?? '');
-        $ids = Core::ids($data['audience_ids'] ?? []);
+        $ids = $type === 'roles' ? Audience::validate_roles($data['audience_ids'] ?? []) : Core::ids($data['audience_ids'] ?? []);
         if ($title === '' || $message === '' || Core::length($title) > 80 || Core::length($message) > 300) {
             return new \WP_Error('ppush_message', 'Informe título (até 80 caracteres) e mensagem (até 300).');
         }
-        if (!in_array($type, ['people', 'profiles', 'all'], true) || ($type !== 'all' && !$ids)) {
-            return new \WP_Error('ppush_audience', 'Selecione pelo menos uma pessoa ou um perfil.');
+        if (is_wp_error($ids)) { return $ids; }
+        if (!in_array($type, ['people', 'roles', 'all'], true) || ($type !== 'all' && !$ids)) {
+            return new \WP_Error('ppush_audience', 'Selecione pelo menos uma pessoa ou um perfil do WordPress.');
         }
         if (count($ids) > 2000) {
             return new \WP_Error('ppush_audience', 'Selecione até 2.000 IDs por campanha, ou utilize perfis.');
@@ -26,11 +27,6 @@ final class Campaigns {
                     return new \WP_Error('ppush_user', 'Uma das pessoas selecionadas não existe.');
                 }
             }
-        } elseif ($type === 'profiles') {
-            $valid = array_map(static fn($profile) => (int)$profile->id, Audience::profiles());
-            if (array_diff($ids, $valid)) {
-                return new \WP_Error('ppush_profile', 'Um dos perfis selecionados não existe.');
-            }
         }
         $url = self::portal_url($data['url'] ?? home_url('/'));
         if (is_wp_error($url)) {
@@ -38,6 +34,7 @@ final class Campaigns {
         }
         $image = esc_url_raw($data['image'] ?? '', ['https']);
         $sample = [
+            'portalPush' => 1,
             'title' => $title, 'body' => $message, 'url' => $url, 'image' => $image,
             'icon' => Core::settings()['icon'] ?: get_site_icon_url(192),
             'tag' => 'portal-push-999999999999', 'campaign' => 999999999999,

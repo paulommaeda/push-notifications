@@ -31,6 +31,7 @@ final class Core {
             'icon' => '',
             'default_ttl' => 86400,
             'retain_on_uninstall' => 1,
+            'site_prompt' => 1,
         ]);
     }
 

@@ -1,44 +1,54 @@
-# Validação — Portal Push 0.2.0
+# Validação — Portal Push 0.3.0
 
-Data: 20/10/2026.
+Data: 20/10/2026. Ambiente: WordPress 6.8.3, PHP 8.3.6 e banco local pelo plugin oficial SQLite Database Integration.
 
-## Ambiente e resultados
+## Conjuntos de verificação
 
-- WordPress 6.8.3, PHP 8.3.6 e banco local de testes com o plugin oficial SQLite Database Integration.
-- 53 verificações de integração para contas, múltiplos perfis, inscrições por dispositivo, propriedade dos dispositivos, públicos, fila, agendamentos, cancelamento, repetição de tentativas e privacidade.
-- 34 verificações HTTP com sessões e cookies reais, incluindo as seis telas administrativas, criação de pessoa/perfil, login por e-mail, associação a perfil, criação de campanha e proteção de endpoints e formulários.
-- 8 verificações do service worker executadas em JavaScript: recebimento, fallback, destino do clique, bloqueio de destinos externos e rastreamento com token.
-- 2 verificações criptográficas independentes: decifragem do corpo RFC 8291/AES-GCM e verificação da assinatura VAPID ES256 com Python/cryptography.
-- Carregamento das bibliotecas validado em PHP sem autoloader anterior e em coexistência com a versão sem namespace de uma biblioteca Web Push.
-- Validação sintática do PHP e do JavaScript.
+| Conjunto | Verificações | Evidência |
+|---|---:|---|
+| Integração do núcleo | 53 | Contas WordPress, múltiplos papéis, inscrições, propriedade dos dispositivos, públicos, fila, horários, novas tentativas, logout e privacidade. |
+| Papéis e migração | 17 | Papéis padrão/personalizados, mudança de papel, rejeição de públicos inválidos, cancelamento de pendências legadas e preservação de contas, papéis e chaves. |
+| Painel e endpoints HTTP | 38 | Sessões/cookies reais, seis telas, público por papel, preferências de recebimento, CSRF, autorização REST, convite nas páginas e ausência de promoção de usuários por campos forjados. |
+| Eventos do worker | 12 | `showNotification`, destino seguro do clique, token, confirmação ao cliente, integração sem assumir instalação/cache e isolamento de mensagens de outros serviços. |
+| Ativação no cliente | 10 | Permissão somente por clique, registro existente do PWA, bloqueio de worker sem integração, chave VAPID, pausa e orientação para iPhone. |
+| Fontes reais dos PWAs | 10 | Geração de templates e arquivos estáticos com SuperPWA 2.2.49 e PWA for WP 1.7.88.2, manutenção do código do PWA e ausência de integração duplicada. |
+| Criptografia independente | 2 | Decifragem RFC 8291/AES-GCM e verificação VAPID ES256 com Python/cryptography. |
+| Atualizador GitHub | 37 | Manifesto, cache, falhas de rede, origem do ZIP, SHA-256, rejeição de pacote adulterado e instalação pelo `Plugin_Upgrader`. |
 
-Total dos conjuntos automatizados acima: **97 verificações aprovadas**. Os testes de transporte usam respostas HTTP simuladas; a assinatura e a criptografia são executadas de verdade. Não foram enviadas notificações a pessoas reais durante os testes.
+Os testes de envio usam respostas HTTP simuladas; assinatura e criptografia são reais. Os testes do atualizador usam rede simulada e ZIP real. A atualização instala uma versão futura simulada somente na cópia descartável e preserva chaves, papéis e dispositivos. Essa versão futura não é publicada.
 
-## Atualizador GitHub (0.2.0)
+Os testes JavaScript executam os módulos em ambientes controlados, sem navegador gráfico. Os templates dos dois PWAs também passam pela análise sintática do Node. O PHP e o JavaScript do plugin passam pela validação sintática. Não foram enviados avisos a pessoas reais.
 
-Foram aprovadas **37 verificações adicionais** do atualizador. Elas cobrem validação do manifesto e da origem do pacote, falhas de rede/JSON, cache, sanitização do HTML, preservação da preferência de outros plugins, download com SHA-256, rejeição e remoção de ZIP adulterado, diretório de instalação e atualização nativa pelo `Plugin_Upgrader` em modo de execução automática.
+Testes reproduzíveis no repositório:
 
-O teste instalou uma versão futura simulada em uma cópia independente do plugin, mantendo o plugin ativo e preservando chaves, perfis e dispositivos. Nenhuma versão futura de teste foi publicada. Os testes de atualização usam rede simulada e arquivo ZIP real.
+```bash
+node tests/service-worker.cjs
+node tests/frontend.cjs
+# Somente em WordPress descartável em localhost:
+wp eval-file tests/roles.php
+# Altera os arquivos da cópia instalada; execute somente em ambiente descartável:
+wp eval-file tests/updater.php
+```
 
-## Validação necessária no portal
+O teste de atualização deve ser chamado a partir do repositório de desenvolvimento, separado da cópia instalada no WordPress, com `dist/` e `updates/` presentes.
 
-1. Instalar em homologação, com a mesma versão PHP, banco MySQL/MariaDB, plugins, cache e configuração HTTPS da hospedagem.
-2. Gerar as chaves de envio e criar dois perfis e duas contas de teste.
-3. Autorizar o recebimento em pelo menos um computador e um celular.
-4. Testar o envio para uma pessoa e conferir que a outra não recebe.
-5. Testar um perfil e a combinação de dois perfis com uma pessoa em comum.
-6. Testar o agendamento, a pausa de dispositivos e o logout/troca de conta.
-7. Conferir o comportamento com a página fechada, com o dispositivo offline e com o modo de concentração do sistema.
-8. No iPhone, validar pelo ícone adicionado à Tela de Início.
-9. Conferir o funcionamento do agendador e dimensionar a hospedagem para o volume esperado.
+## Homologação no portal
 
-## Limites desta versão
+1. Instalar em ambiente HTTPS com a mesma configuração de PHP, MySQL/MariaDB, tema, plugins e cache da hospedagem.
+2. Gerar as chaves e usar duas contas com papéis existentes do WordPress.
+3. Autorizar o push em computador e celular. No iPhone, abrir pelo ícone adicionado à Tela de Início.
+4. Enviar para uma pessoa e conferir que a outra não recebe; depois testar um papel e a combinação de papéis sem duplicação.
+5. Conferir aviso com página/PWA fechado, toque abrindo o destino, dispositivo offline e modo de concentração.
+6. Conferir a integração com o plugin/worker PWA efetivamente usado no portal, incluindo atualização dos arquivos e exclusões de cache para sessões/endpoints autenticados.
+7. Testar mudança de papel, agendamento, pausa de dispositivo, logout e troca de conta.
+8. Validar o acesso do WordPress ao manifesto/ZIP públicos do GitHub e a atualização em homologação. Neste executor, o DNS usado pelo PHP não resolve o domínio raw do GitHub; por isso, o teste nativo usa a rede simulada sem enfraquecer a validação HTTP do plugin.
+9. Configurar o agendador e dimensionar a hospedagem para o volume esperado.
 
-- Não foi validada a entrega em dispositivos físicos ou em um domínio HTTPS do usuário.
-- A interface foi validada por renderização HTML e operações HTTP; não houve validação visual em um navegador gráfico nesta execução.
-- Os testes locais usaram SQLite como adaptação para executar o WordPress; o banco de produção MySQL/MariaDB ainda precisa de homologação.
-- Não houve teste de carga ou compatibilidade com todos os plugins/temas.
-- Um PWA/service worker já existente precisa de integração específica; o plugin evita substituí-lo.
-- A interface do sistema operacional/navegador pode variar; imagem, ícone e outros elementos não são exibidos de forma idêntica em todos os dispositivos.
-- Aceitação pelo serviço de push não confirma leitura nem garante entrega imediata.
-- Publicação automática de posts, regras por campos personalizados, notificações internas lidas/não lidas e canais de e-mail não estão incluídos nesta primeira versão.
+## Limites
+
+- A entrega ainda não foi validada em dispositivos físicos nem no domínio HTTPS do usuário.
+- Não houve inspeção visual em navegador gráfico, teste de carga ou homologação com todos os temas/plugins.
+- O banco local usou SQLite; MySQL/MariaDB precisa de homologação na hospedagem.
+- PWA for WP e SuperPWA tiveram templates/arquivos testados, sem validar instalação e entrega em um telefone real. Outros PWAs exigem integração específica do módulo ao seu worker.
+- Imagem, ícone e apresentação do aviso dependem do navegador/sistema. Aceitação pelo serviço não comprova exibição ou leitura.
+- Gatilhos automáticos de publicação, campos personalizados, caixa de mensagens internas e e-mail não estão incluídos.

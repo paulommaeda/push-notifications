@@ -2,17 +2,17 @@
   "schema": 1,
   "name": "Portal Push — Pessoas e Perfis",
   "slug": "portal-push",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "homepage": "https://github.com/paulommaeda/push-notifications",
   "requires": "6.4",
   "requires_php": "8.2",
   "tested": "6.8.3",
-  "download_url": "https://raw.githubusercontent.com/paulommaeda/push-notifications/main/dist/portal-push-0.2.0.zip",
-  "sha256": "c2dcfac1d9966c8e6c31390570de9959726b930848ea0c92ca1fedadf8b7d072",
-  "last_updated": "2026-10-20 14:47:10",
+  "download_url": "https://raw.githubusercontent.com/paulommaeda/push-notifications/main/dist/portal-push-0.3.0.zip",
+  "sha256": "b77c14da17ddaa25226f6d713d1a607025a11c6d771bcea68ec5fd0ecbd7193c",
+  "last_updated": "2026-10-20 15:15:48",
   "sections": {
-    "description": "<p>Notificações Web Push com núcleo próprio, cadastro de pessoas, múltiplos perfis e envio segmentado para portais WordPress.</p>",
-    "installation": "<p>Instale o ZIP pelo painel, gere as chaves de envio e crie a página com o shortcode [portal_push]. Cada pessoa autoriza o recebimento no próprio dispositivo.</p>",
-    "changelog": "<h4>0.2.0</h4><p>Atualizações nativas pelo WordPress a partir do GitHub, instalação automática opcional, verificação SHA-256 do pacote e preservação do diretório do plugin.</p>"
+    "description": "<p>Push no navegador e no PWA instalado, com núcleo próprio e segmentação pelos usuários e papéis do WordPress.</p>",
+    "installation": "<p>Instale o ZIP pelo painel e gere as chaves. Cada usuário entra no portal e ativa as notificações no dispositivo. A página com [portal_push] é opcional para gerenciar dispositivos.</p>",
+    "changelog": "<h4>0.3.0</h4><ul><li>Segmentação pelos papéis nativos e personalizados dos usuários do WordPress.</li><li>Cadastro e edição de contas nas telas nativas; remoção dos grupos próprios da interface.</li><li>Botão de ativação nas páginas para usuários conectados; página de dispositivos opcional.</li><li>Integração dos eventos push ao service worker de PWA for WP e SuperPWA.</li><li>Verificação de suporte antes de usar um worker existente, sem substituí-lo.</li><li>Migração preserva contas, papéis, chaves e dispositivos; cancela pendências dos antigos grupos.</li></ul>"
   }
 }

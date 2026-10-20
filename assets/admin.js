@@ -9,7 +9,7 @@
   const search = document.querySelector('[data-people-search]');
   const status = document.querySelector('[data-people-status]');
   const update = () => {
-    for (const key of ['people', 'profiles', 'all']) document.querySelector('[data-audience-' + key + ']').hidden = audience.value !== key;
+    for (const key of ['people', 'roles', 'all']) document.querySelector('[data-audience-' + key + ']').hidden = audience.value !== key;
     select.required = audience.value === 'people';
     document.querySelector('[name="confirm_all"]').required = audience.value === 'all';
   };

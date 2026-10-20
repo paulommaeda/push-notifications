@@ -17,14 +17,16 @@ $root = dirname(__DIR__);
 $stable = json_decode(file_get_contents($root . '/updates/portal-push.json'), true);
 $stable_file = $root . '/dist/portal-push-' . $stable['version'] . '.zip';
 $future = $stable;
-$future['version'] = '0.3.0';
-$future['download_url'] = 'https://raw.githubusercontent.com/paulommaeda/push-notifications/main/dist/portal-push-0.3.0.zip';
+$parts = array_map('intval', explode('.', $stable['version']));
+$parts[2]++;
+$future['version'] = implode('.', $parts);
+$future['download_url'] = 'https://raw.githubusercontent.com/paulommaeda/push-notifications/main/dist/portal-push-' . $future['version'] . '.zip';
 $future_file = wp_tempnam('portal-push-future.zip');
 $input = new ZipArchive(); $input->open($stable_file);
 $output = new ZipArchive(); $output->open($future_file, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 for ($i = 0; $i < $input->numFiles; $i++) {
     $name = $input->getNameIndex($i); $content = $input->getFromIndex($i);
-    if ($name === 'portal-push/portal-push.php') { $content = str_replace("0.2.0", "0.3.0", $content); }
+    if ($name === 'portal-push/portal-push.php') { $content = str_replace($stable['version'], $future['version'], $content); }
     $output->addFromString($name, $content);
 }
 $output->close(); $input->close();
@@ -76,9 +78,9 @@ try {
     ucheck(Updater::update($untouched, ['UpdateURI' => Updater::REPOSITORY], 'another/another.php') === $untouched, 'Atualizador não interfere em outro plugin GitHub');
     ucheck(Updater::update($untouched, ['UpdateURI' => 'https://github.com/other/repo'], plugin_basename(PPUSH_FILE)) === $untouched, 'Update URI incorreto não é atendido');
     $update = Updater::update(false, ['UpdateURI' => Updater::REPOSITORY], plugin_basename(PPUSH_FILE));
-    ucheck($update['version'] === '0.3.0' && $update['package'] === $future['download_url'], 'Filtro nativo informa a nova versão e o ZIP correto');
+    ucheck($update['version'] === $future['version'] && $update['package'] === $future['download_url'], 'Filtro nativo informa a nova versão e o ZIP correto');
     $info = Updater::information(false, 'plugin_information', (object)['slug' => 'portal-push']);
-    ucheck($info->version === '0.3.0' && $info->download_link === $future['download_url'], 'Modal de detalhes usa os metadados do próprio plugin');
+    ucheck($info->version === $future['version'] && $info->download_link === $future['download_url'], 'Modal de detalhes usa os metadados do próprio plugin');
     ucheck(Updater::information($untouched, 'query_plugins', (object)['slug' => 'portal-push']) === $untouched, 'Consulta de catálogo permanece intacta');
     ucheck(Updater::information($untouched, 'plugin_information', (object)['slug' => 'outro']) === $untouched, 'Modal de outros plugins permanece intacto');
 
@@ -120,10 +122,10 @@ try {
     global $wp_filesystem;
     $wp_filesystem->delete($temporary, true);
 
-    $snapshot = ['keys' => get_option('ppush_vapid'), 'profiles' => $wpdb->get_var('SELECT COUNT(*) FROM ' . Core::table('profiles')), 'devices' => $wpdb->get_var('SELECT COUNT(*) FROM ' . Core::table('subscriptions'))];
+    $snapshot = ['keys' => get_option('ppush_vapid'), 'roles' => wp_roles()->roles, 'devices' => $wpdb->get_var('SELECT COUNT(*) FROM ' . Core::table('subscriptions'))];
     Updater::clear(); delete_site_transient('update_plugins'); wp_clean_plugins_cache(true); wp_update_plugins();
     $native = get_site_transient('update_plugins');
-    ucheck(isset($native->response[plugin_basename(PPUSH_FILE)]) && $native->response[plugin_basename(PPUSH_FILE)]->new_version === '0.3.0', 'WordPress detecta a nova versão pelo mecanismo nativo');
+    ucheck(isset($native->response[plugin_basename(PPUSH_FILE)]) && $native->response[plugin_basename(PPUSH_FILE)]->new_version === $future['version'], 'WordPress detecta a nova versão pelo mecanismo nativo');
     require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
     // O modo automático mantém o plugin ativo; o modo manual usa uma etapa de reativação pelo painel.
     if (!defined('DOING_CRON')) { define('DOING_CRON', true); }
@@ -132,10 +134,10 @@ try {
     if (is_wp_error($result)) { throw new RuntimeException($result->get_error_message()); }
     if ($result !== true) { throw new RuntimeException('Upgrade retornou ' . var_export($result, true) . '; ' . wp_json_encode($upgrader->skin->get_errors())); }
     $headers = get_file_data(PPUSH_FILE, ['Version' => 'Version']);
-    ucheck($headers['Version'] === '0.3.0', 'Atualização real pelo Plugin_Upgrader instala a nova versão');
+    ucheck($headers['Version'] === $future['version'], 'Atualização real pelo Plugin_Upgrader instala a nova versão');
     ucheck(is_plugin_active(plugin_basename(PPUSH_FILE)), 'Plugin continua ativo após a atualização');
     ucheck($snapshot['keys'] === get_option('ppush_vapid'), 'Atualização preserva as chaves de envio');
-    ucheck($snapshot['profiles'] === $wpdb->get_var('SELECT COUNT(*) FROM ' . Core::table('profiles')), 'Atualização preserva os perfis');
+    ucheck($snapshot['roles'] === wp_roles()->roles, 'Atualização preserva os papéis do WordPress');
     ucheck($snapshot['devices'] === $wpdb->get_var('SELECT COUNT(*) FROM ' . Core::table('subscriptions')), 'Atualização preserva os dispositivos');
     $report = ['passed' => count($ppush_update_checks), 'checks' => $ppush_update_checks];
     file_put_contents(get_temp_dir() . 'portal-push-updater-report.json', wp_json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
