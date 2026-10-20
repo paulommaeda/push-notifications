@@ -1,0 +1,10 @@
+.DS_Store
+__pycache__/
+*.pyc
+*.log
+.env
+.env.*
+wp-config.php
+*.tmp
+tests/*fixture*.json
+tests/*report*.json

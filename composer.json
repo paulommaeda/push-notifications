@@ -1,0 +1,12 @@
+{
+  "name": "paulomaeda/portal-push",
+  "description": "Web Push local para portais WordPress",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "require": { "php": ">=8.2", "minishlink/web-push": "10.1.0" },
+  "config": {
+    "platform": { "php": "8.2.0" },
+    "allow-plugins": false,
+    "sort-packages": true
+  }
+}
