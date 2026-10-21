@@ -50,6 +50,14 @@ final class Admin {
         $task = sanitize_key(wp_unslash($_POST['task'] ?? ''));
         $data = wp_unslash($_POST);
         switch ($task) {
+            case 'template_save':
+                $result = Templates::save($data, is_string($data['original_key'] ?? null) ? $data['original_key'] : '');
+                if (is_wp_error($result)) { self::fail('templates', $result); }
+                self::finish('templates', 'Modelo salvo. Outro plugin já pode dispará-lo pela chave de integração.');
+            case 'template_delete':
+                $result = Templates::delete(is_string($data['key'] ?? null) ? $data['key'] : '');
+                if (is_wp_error($result)) { self::fail('templates', $result); }
+                self::finish('templates', 'Modelo excluído. O histórico das campanhas foi preservado.');
             case 'person_save':
                 $id = absint($data['id'] ?? 0);
                 if (!$id || !get_userdata($id)) { self::finish('people', 'Selecione uma conta existente do WordPress.', true); }
@@ -160,7 +168,7 @@ final class Admin {
             return;
         }
         $tab = sanitize_key(wp_unslash($_GET['tab'] ?? 'dashboard'));
-        $tabs = ['dashboard' => 'Visão geral', 'people' => 'Pessoas', 'profiles' => 'Perfis', 'compose' => 'Nova notificação', 'campaigns' => 'Campanhas', 'settings' => 'Configurações'];
+        $tabs = ['dashboard' => 'Visão geral', 'people' => 'Pessoas', 'profiles' => 'Perfis', 'compose' => 'Nova notificação', 'templates' => 'Modelos e integrações', 'campaigns' => 'Campanhas', 'settings' => 'Configurações'];
         if (!isset($tabs[$tab])) {
             $tab = 'dashboard';
         }
@@ -177,7 +185,7 @@ final class Admin {
         echo '</nav>';
         match ($tab) {
             'people' => self::people(), 'profiles' => self::profiles(), 'compose' => self::compose(),
-            'campaigns' => self::campaigns(), 'settings' => self::settings(), default => self::dashboard(),
+            'templates' => self::templates(), 'campaigns' => self::campaigns(), 'settings' => self::settings(), default => self::dashboard(),
         };
         echo '</div>';
     }
@@ -278,6 +286,37 @@ final class Admin {
         echo '</div><p class="description">Recebem as pessoas de qualquer perfil selecionado. Um mesmo dispositivo recebe uma vez por campanha.</p></fieldset>';
         echo '<label data-audience-all hidden class="ppush-inline"><input type="checkbox" name="confirm_all" value="1"> Confirmo o envio para todas as pessoas habilitadas com dispositivos ativos.</label>';
         echo '<label>Título<input name="title" maxlength="80" required placeholder="Ex.: Uma novidade para sua equipe"></label><label>Mensagem<textarea name="message" rows="4" maxlength="300" required placeholder="Escreva o aviso que aparecerá na notificação"></textarea></label><label>Link no portal<input type="url" name="url" value="' . esc_attr(home_url('/')) . '" required><small>O destino deve pertencer a este portal. As permissões da página continuam valendo.</small></label><label>Imagem opcional<input name="image" type="url" placeholder="https://..."></label><div class="ppush-fields"><label>Agendar (opcional)<input type="datetime-local" name="scheduled_local"><small>Fuso: ' . esc_html(wp_timezone_string()) . '. Vazio = próxima execução da fila.</small></label><label>Validade para dispositivos offline<select name="ttl"><option value="3600">1 hora</option><option value="86400" selected>24 horas</option><option value="604800">7 dias</option></select></label></div><button class="button button-primary button-hero">Criar campanha</button></form></section>';
+    }
+
+    private static function templates(): void {
+        $items = Templates::all();
+        $edit = is_string($_GET['edit'] ?? null) ? wp_unslash($_GET['edit']) : '';
+        $template = $items[$edit] ?? [];
+        echo '<section class="ppush-panel"><h2>Notificações disparadas por outros plugins</h2><p>Salve o texto e uma chave de integração. No evento do outro plugin, chame <code>portal_push_notify()</code> ou o gancho <code>portal_push_notify</code>. O Portal Push monta a mensagem e a coloca na fila.</p><p>Use variáveis como <code>{nome}</code>, <code>{tarefa}</code> e <code>{tarefa_id}</code>. O plugin que dispara informa os valores. Salvar o modelo não envia notificações.</p></section>';
+        echo '<div class="ppush-columns"><section class="ppush-panel"><h2>' . ($template ? 'Editar modelo' : 'Novo modelo') . '</h2>';
+        self::form('template_save');
+        echo '<input type="hidden" name="original_key" value="' . esc_attr($template['key'] ?? '') . '"><label>Nome do modelo<input name="name" maxlength="120" required value="' . esc_attr($template['name'] ?? '') . '" placeholder="Ex.: Tarefa concluída"></label><label>Chave da integração<input name="key" maxlength="80" pattern="[a-z][a-z0-9_\-]{0,79}" required ' . ($template ? 'readonly ' : '') . 'value="' . esc_attr($template['key'] ?? '') . '" placeholder="tarefa_concluida"><small>Use esta chave no código do outro plugin. Ela permanece igual depois do cadastro.</small></label>';
+        echo '<label>Título<input name="title" maxlength="80" required value="' . esc_attr($template['title'] ?? '') . '" placeholder="Tarefa concluída"></label><label>Mensagem<textarea name="message" rows="4" maxlength="300" required placeholder="Olá {nome}, a tarefa {tarefa} foi concluída.">' . esc_textarea($template['message'] ?? '') . '</textarea><small>Os limites também são verificados depois de preencher as variáveis.</small></label><label>Link no portal<input name="url" required value="' . esc_attr($template['url'] ?? home_url('/')) . '"><small>Ex.: ' . esc_html(home_url('/tarefas/?id={tarefa_id}')) . '. O plugin que dispara também pode informar um link específico.</small></label><label>Imagem opcional<input type="url" name="image" value="' . esc_attr($template['image'] ?? '') . '" placeholder="https://..."></label>';
+        $type = $template['audience_type'] ?? 'dynamic';
+        echo '<label>Destinatários padrão<select name="audience_type" data-template-audience>';
+        foreach (['dynamic' => 'O plugin que dispara informa o destinatário', 'roles' => 'Perfis do WordPress', 'all' => 'Todos os habilitados'] as $value => $label) {
+            echo '<option value="' . esc_attr($value) . '" ' . selected($type, $value, false) . '>' . esc_html($label) . '</option>';
+        }
+        echo '</select><small>O código da integração pode escolher outro público explicitamente.</small></label><fieldset data-template-roles ' . ($type !== 'roles' ? 'hidden' : '') . '><legend>Perfis destinatários</legend><div class="ppush-checkboxes">';
+        foreach (Audience::roles() as $slug => $name) {
+            echo '<label><input type="checkbox" name="role_slugs[]" value="' . esc_attr($slug) . '" ' . checked(in_array($slug, $template['audience_ids'] ?? [], true), true, false) . '> ' . esc_html($name) . '</label>';
+        }
+        echo '</div></fieldset><label class="ppush-inline" data-template-all ' . ($type !== 'all' ? 'hidden' : '') . '><input type="checkbox" name="confirm_all" value="1" ' . checked($type === 'all', true, false) . '> Confirmo que este modelo poderá enviar para todos os habilitados.</label><label>Validade para dispositivos offline (segundos)<input type="number" name="ttl" min="60" max="604800" value="' . esc_attr($template['ttl'] ?? Core::settings()['default_ttl']) . '"></label><label class="ppush-inline"><input type="checkbox" name="enabled" value="1" ' . checked(!$template || !empty($template['enabled']), true, false) . '> Permitir disparos deste modelo</label><button class="button button-primary">Salvar modelo</button></form></section>';
+        echo '<section class="ppush-panel"><h2>Modelos cadastrados</h2>';
+        foreach ($items as $key => $item) {
+            $variables = Templates::variables($item);
+            $public = ['dynamic' => 'Definido pelo plugin que dispara', 'roles' => 'Perfis do WordPress', 'all' => 'Todos os habilitados'][$item['audience_type']] ?? '';
+            echo '<div class="ppush-row"><div><strong>' . esc_html($item['name']) . '</strong><p><code>' . esc_html($key) . '</code> · ' . (!empty($item['enabled']) ? 'Ativo' : 'Pausado') . '</p><p>' . esc_html($item['title']) . '</p><p class="description">Público: ' . esc_html($public) . '. Variáveis: ' . esc_html($variables ? implode(', ', array_map(static fn($name) => '{' . $name . '}', $variables)) : 'nenhuma') . '.</p><a class="button" href="' . esc_url(self::url('templates', ['edit' => $key])) . '">Editar modelo</a> ';
+            self::form('template_delete');
+            echo '<input type="hidden" name="key" value="' . esc_attr($key) . '"><button class="button ppush-danger" data-confirm="Excluir este modelo? Integrações que usam esta chave deixarão de disparar novas notificações.">Excluir</button></form></div></div>';
+        }
+        if (!$items) { echo '<p>Cadastre o primeiro modelo para conectar outro plugin.</p>'; }
+        echo '<h3>Exemplo de chamada</h3><p>Depois de cadastrar a chave <code>tarefa_concluida</code> com as variáveis nome, tarefa e tarefa_id:</p><pre class="ppush-code">' . esc_html("\$campaign_id = portal_push_notify('tarefa_concluida', [\n    'user_id' => 123,\n    'variables' => [\n        'nome' => 'Ana',\n        'tarefa' => 'Revisar o comunicado',\n        'tarefa_id' => 456,\n    ],\n    'event_id' => 'tarefa:456:concluida',\n]);") . '</pre><p class="description">Troque os IDs e valores pelos dados do evento. Com event_id, a mesma chave de evento, modelo e público reutilizam a campanha existente. A função retorna o ID da campanha ou WP_Error.</p><p><a href="https://github.com/paulommaeda/push-notifications/blob/main/INTEGRACOES.md">Ver guia de integração e exemplos de ganchos</a></p></section></div>';
     }
 
     private static function campaigns(): void {

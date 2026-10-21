@@ -4,7 +4,7 @@ Tags: push, notifications, portal, web-push
 Requires at least: 6.4
 Tested up to: 6.8.3
 Requires PHP: 8.2
-Stable tag: 0.3.1
+Stable tag: 0.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -29,12 +29,15 @@ O cadastro, as chaves VAPID, as campanhas, a fila e os relatórios ficam na sua 
 * Integração ao worker de PWA for WP e SuperPWA, preservando o aplicativo existente.
 * Pausa neste navegador ao sair da conta.
 * Integração com as ferramentas de exportação e apagamento de dados do WordPress.
-* API PHP portal_push_send() para integrações próprias.
+* Modelos de notificações editáveis com variáveis e chave de integração.
+* API PHP portal_push_notify() e gancho portal_push_notify para outros plugins.
+* Chave de evento opcional evita campanhas duplicadas.
+* API PHP portal_push_send() mantida para mensagens sem modelo.
 
 == Installation ==
 
 1. Acesse Plugins > Adicionar plugin > Enviar plugin.
-2. Envie portal-push-0.3.1.zip e ative.
+2. Envie portal-push-0.4.0.zip e ative.
 3. Abra Portal Push > Configurações e gere as chaves de envio.
 4. Confira as contas e os papéis em Usuários no WordPress.
 5. Cada pessoa entra no portal e clica em Ativar notificações no próprio dispositivo.
@@ -67,6 +70,13 @@ Não. O serviço do navegador aceitou a requisição. O dispositivo pode estar o
 PWA for WP e SuperPWA recebem os eventos de push em seu próprio worker. Feche e reabra o aplicativo depois da atualização. Outros PWAs precisam incorporar o módulo documentado no guia; um worker sem integração é preservado. O filtro portal_push_disable_manifest permite desabilitar o manifesto básico.
 
 == Changelog ==
+
+= 0.4.0 =
+* Modelos e integrações no painel, com chave permanente, variáveis, público padrão e pausa.
+* Função portal_push_notify() e ação portal_push_notify para eventos de outros plugins.
+* event_id evita duplicidade por modelo, público e evento, com índice único no banco.
+* API portal_push_send() preservada e ampliada com idempotency_key opcional.
+* Guia INTEGRACOES.md com exemplos de usuários, papéis e adaptação de ganchos.
 
 = 0.3.1 =
 * Aguarda a instalação e ativa a atualização integrada do PWA após o clique do usuário.

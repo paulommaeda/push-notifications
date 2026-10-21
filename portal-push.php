@@ -3,7 +3,7 @@
  * Plugin Name: Portal Push — Pessoas e Perfis
  * Plugin URI: https://github.com/paulommaeda/push-notifications
  * Description: Push no navegador e no PWA, por pessoa ou perfil dos usuários do WordPress.
- * Version: 0.3.1
+ * Version: 0.4.0
  * Author: Paulo Maeda
  * Author URI: https://paulomaeda.com
  * Requires at least: 6.4
@@ -15,7 +15,7 @@
 
 defined('ABSPATH') || exit;
 
-define('PPUSH_VERSION', '0.3.1');
+define('PPUSH_VERSION', '0.4.0');
 define('PPUSH_FILE', __FILE__);
 define('PPUSH_DIR', plugin_dir_path(__FILE__));
 define('PPUSH_URL', plugin_dir_url(__FILE__));
@@ -43,7 +43,7 @@ add_action('plugins_loaded', static function (): void {
         return;
     }
     require_once PPUSH_DIR . 'vendor/autoload.php';
-    foreach (['core', 'audience', 'campaigns', 'transport', 'queue', 'rest', 'frontend', 'admin', 'privacy'] as $file) {
+    foreach (['core', 'audience', 'campaigns', 'templates', 'transport', 'queue', 'rest', 'frontend', 'admin', 'privacy'] as $file) {
         require_once PPUSH_DIR . 'includes/class-' . $file . '.php';
     }
     \PauloMaeda\PortalPush\Core::boot();
@@ -56,3 +56,14 @@ function portal_push_send(array $notification) {
     }
     return \PauloMaeda\PortalPush\Campaigns::create($notification);
 }
+
+/** Dispara um modelo salvo. Retorna o ID da campanha na fila ou WP_Error. */
+function portal_push_notify(string $template_key, array $context = []): int|WP_Error {
+    $result = class_exists('PauloMaeda\\PortalPush\\Templates')
+        ? \PauloMaeda\PortalPush\Templates::notify($template_key, $context)
+        : new WP_Error('ppush_unavailable', 'Portal Push ainda não está disponível. Execute a integração em init ou em um evento posterior.');
+    if (is_wp_error($result)) { do_action('portal_push_integration_error', $result, $template_key); }
+    return $result;
+}
+
+add_action('portal_push_notify', 'portal_push_notify', 10, 2);

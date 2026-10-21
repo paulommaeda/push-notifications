@@ -1,4 +1,4 @@
-# Portal Push — Guia da versão 0.3.1
+# Portal Push — Guia da versão 0.4.0
 
 ## Onde o aviso aparece
 
@@ -22,7 +22,7 @@ O público é calculado quando a campanha fica disponível para envio. Antes de 
 
 ## Instalar e configurar
 
-1. Envie `portal-push-0.3.1.zip` por **Plugins → Adicionar plugin → Enviar plugin** e ative. Se houver versão anterior, substitua pelo painel.
+1. Envie `portal-push-0.4.0.zip` por **Plugins → Adicionar plugin → Enviar plugin** e ative. Se houver versão anterior, substitua pelo painel.
 2. Abra **Portal Push → Configurações**, confira o e-mail técnico e clique em **Gerar chaves no servidor**. O e-mail identifica o emissor; essa configuração não envia e-mails.
 3. Confira os usuários e papéis existentes no WordPress. Para novas contas, use **Usuários → Adicionar novo**.
 4. Cada pessoa entra no portal e clica em **Ativar notificações** no dispositivo em que quer receber os avisos. A solicitação de permissão aparece depois desse clique.
@@ -85,6 +85,14 @@ wp cron event run --due-now --path=/caminho/do/wordpress
 **Processar fila agora** executa uma rodada manual. Falhas transitórias (HTTP 429/5xx) têm até três tentativas com espera crescente e respeito a `Retry-After`. Inscrições expiradas (404/410) são pausadas.
 
 **Aceita pelo serviço** informa que o serviço do navegador aceitou a requisição. Não comprova exibição ou leitura. O relatório registra um clique por dispositivo. O sistema não garante entrega imediata ou exatamente uma vez; a identificação estável da campanha reduz duplicação visual.
+
+## Modelos e eventos de outros plugins
+
+A partir de 0.4.0, **Portal Push → Modelos e integrações** permite salvar notificações pré-configuradas. Cada modelo tem uma chave permanente, título, mensagem, link, variáveis como `{nome}` e `{tarefa}`, público padrão e ativação/pausa.
+
+O outro plugin chama `portal_push_notify($key, $context)` ou emite `do_action('portal_push_notify', $key, $context)` dentro do seu evento. O destinatário pode ser um usuário WordPress, vários usuários, papéis ou o público pré-configurado. `event_id` opcional evita repetir a campanha para o mesmo modelo e público. Nenhum evento de outro plugin é interceptado automaticamente sem o código de ligação correspondente.
+
+O retorno da função é o ID da campanha ou `WP_Error`. Variáveis ausentes, públicos inválidos e links externos são rejeitados. O conteúdo final fica salvo na campanha; editar/pausar/excluir o modelo não cancela pendências já criadas. O arquivo [INTEGRACOES.md](INTEGRACOES.md) contém a referência completa, exemplos de ganchos e tratamento de erros.
 
 ## API PHP do portal
 

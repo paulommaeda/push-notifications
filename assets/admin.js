@@ -3,6 +3,15 @@
   document.querySelectorAll('[data-confirm]').forEach(button => button.addEventListener('click', event => {
     if (!window.confirm(button.dataset.confirm)) event.preventDefault();
   }));
+  const templateAudience = document.querySelector('[data-template-audience]');
+  if (templateAudience) {
+    const updateTemplate = () => {
+      document.querySelector('[data-template-roles]').hidden = templateAudience.value !== 'roles';
+      document.querySelector('[data-template-all]').hidden = templateAudience.value !== 'all';
+      document.querySelector('[name="confirm_all"]').required = templateAudience.value === 'all';
+    };
+    templateAudience.addEventListener('change', updateTemplate); updateTemplate();
+  }
   const audience = document.querySelector('[data-audience]');
   if (!audience) return;
   const select = document.querySelector('[data-people-select]');

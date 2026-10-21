@@ -78,7 +78,9 @@ final class Installer {
             ttl int(11) unsigned NOT NULL DEFAULT 86400,
             total int(11) unsigned NOT NULL DEFAULT 0,
             last_error text NOT NULL,
+            idempotency_hash char(64) DEFAULT NULL,
             PRIMARY KEY  (id),
+            UNIQUE KEY idempotency_hash (idempotency_hash),
             KEY status_schedule (status,scheduled_at)
         ) $charset;";
         $tables[] = "CREATE TABLE {$p}deliveries (

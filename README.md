@@ -4,13 +4,13 @@ Notificações **push na área de avisos do navegador ou do smartphone**, inclus
 
 Os destinatários são os **usuários do WordPress**. Os perfis são seus **papéis**, como Assinante e Editor, incluindo os personalizados já existentes no portal. O plugin não cria grupos próprios de destinatários nem altera os papéis ao enviar uma campanha.
 
-## Instalar a versão 0.3.1
+## Instalar a versão 0.4.0
 
-[Baixar o ZIP instalável](https://raw.githubusercontent.com/paulommaeda/push-notifications/main/dist/portal-push-0.3.1.zip)
+[Baixar o ZIP instalável](https://raw.githubusercontent.com/paulommaeda/push-notifications/main/dist/portal-push-0.4.0.zip)
 
 No WordPress: **Plugins → Adicionar plugin → Enviar plugin**, selecione o ZIP e ative. Para uma instalação existente, escolha substituir a versão atual. A partir da versão 0.2.0, também é possível receber a atualização pelo painel.
 
-Use `dist/portal-push-0.3.1.zip`, que contém a pasta `portal-push/` e as dependências prontas. O ZIP do botão Code do GitHub é o repositório de desenvolvimento, não o pacote de instalação.
+Use `dist/portal-push-0.4.0.zip`, que contém a pasta `portal-push/` e as dependências prontas. O ZIP do botão Code do GitHub é o repositório de desenvolvimento, não o pacote de instalação.
 
 ## Como funciona
 
@@ -30,7 +30,9 @@ O núcleo, as chaves VAPID, as campanhas, a fila e os relatórios ficam na hospe
 - Agendamento, cancelamento, novas tentativas e relatórios por dispositivo.
 - Botão de ativação nas páginas e gerenciamento opcional com `[portal_push]`.
 - Integração do push ao worker de **PWA for WP** e **SuperPWA**.
-- API PHP `portal_push_send()` para integrar eventos do portal.
+- Modelos editáveis com variáveis, chave de integração e destinatários padrão.
+- API `portal_push_notify()` e gancho para eventos de outros plugins, com prevenção de duplicidade por evento.
+- API PHP `portal_push_send()` preservada para mensagens sem modelo.
 - Atualização pelo painel do WordPress e instalação automática opcional.
 
 Requer WordPress 6.4+, PHP 8.2+, HTTPS, OpenSSL, cURL e mbstring. O ZIP inclui as dependências com namespaces isolados.
@@ -42,6 +44,21 @@ PWA for WP e SuperPWA continuam responsáveis pelo aplicativo, manifesto e naveg
 Se aparecer o aviso de integração pendente, use **Portal Push → Configurações → Reparar integração com o PWA**. O botão regenera e verifica o arquivo/template no servidor e renova a URL de registro do SuperPWA. Se houver cache/CDN na hospedagem, limpe o cache dos arquivos do PWA; reabra o aplicativo e tente a ativação. O diagnóstico do painel confirma o arquivo local, não o estado do celular ou de uma CDN.
 
 Outros PWAs exigem integrar o módulo conforme [LEIA-ME.md](LEIA-ME.md). Um worker sem integração não é substituído. No iPhone/iPad, use iOS/iPadOS 16.4+ e abra o portal pelo ícone adicionado à Tela de Início antes de autorizar os avisos.
+
+## Disparar a partir de outro plugin
+
+Em **Portal Push → Modelos e integrações**, crie a chave `tarefa_concluida`, o título, a mensagem com variáveis e o público padrão. No evento do outro plugin, chame:
+
+```php
+$campaign_id = portal_push_notify('tarefa_concluida', [
+    'user_id' => 123,
+    'variables' => ['nome' => 'Ana', 'tarefa' => 'Revisar comunicado'],
+    'url' => home_url('/tarefas/'),
+    'event_id' => 'tarefa:456:concluida',
+]);
+```
+
+A função retorna o ID da campanha ou `WP_Error`. O evento também pode usar `do_action('portal_push_notify', $key, $context)`. A integração acontece dentro do mesmo WordPress; o outro plugin valida a ação e informa o destinatário. [Veja o guia completo e os exemplos de ganchos](INTEGRACOES.md).
 
 ## Atualizações pelo painel
 
@@ -68,6 +85,7 @@ Cada pacote publicado deve permanecer imutável. Aumente a versão para corrigir
 ## Documentação
 
 - [Instalação, PWA e integração PHP](LEIA-ME.md)
+- [API de modelos e integração com outros plugins](INTEGRACOES.md)
 - [Testes e limites conhecidos](VALIDACAO.md)
 - [Histórico](readme.txt)
 - [Licença GPL](LICENSE.txt)

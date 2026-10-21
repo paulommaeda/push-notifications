@@ -122,7 +122,12 @@ try {
     global $wp_filesystem;
     $wp_filesystem->delete($temporary, true);
 
-    $snapshot = ['keys' => get_option('ppush_vapid'), 'roles' => wp_roles()->roles, 'devices' => $wpdb->get_var('SELECT COUNT(*) FROM ' . Core::table('subscriptions'))];
+    $event_rows = static fn() => $wpdb->get_results('SELECT id,idempotency_hash FROM ' . Core::table('campaigns') . ' WHERE idempotency_hash IS NOT NULL ORDER BY id', ARRAY_A);
+    $snapshot = [
+        'keys' => get_option('ppush_vapid'), 'roles' => wp_roles()->roles,
+        'devices' => $wpdb->get_var('SELECT COUNT(*) FROM ' . Core::table('subscriptions')),
+        'templates' => get_option('ppush_templates', []), 'events' => $event_rows(),
+    ];
     Updater::clear(); delete_site_transient('update_plugins'); wp_clean_plugins_cache(true); wp_update_plugins();
     $native = get_site_transient('update_plugins');
     ucheck(isset($native->response[plugin_basename(PPUSH_FILE)]) && $native->response[plugin_basename(PPUSH_FILE)]->new_version === $future['version'], 'WordPress detecta a nova versão pelo mecanismo nativo');
@@ -139,6 +144,8 @@ try {
     ucheck($snapshot['keys'] === get_option('ppush_vapid'), 'Atualização preserva as chaves de envio');
     ucheck($snapshot['roles'] === wp_roles()->roles, 'Atualização preserva os papéis do WordPress');
     ucheck($snapshot['devices'] === $wpdb->get_var('SELECT COUNT(*) FROM ' . Core::table('subscriptions')), 'Atualização preserva os dispositivos');
+    ucheck($snapshot['templates'] === get_option('ppush_templates', []), 'Atualização preserva os modelos de integração');
+    ucheck($snapshot['events'] === $event_rows(), 'Atualização preserva as chaves dos eventos para evitar reenvios');
     $report = ['passed' => count($ppush_update_checks), 'checks' => $ppush_update_checks];
     file_put_contents(get_temp_dir() . 'portal-push-updater-report.json', wp_json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     echo wp_json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";

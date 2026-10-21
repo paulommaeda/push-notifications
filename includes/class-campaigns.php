@@ -48,20 +48,40 @@ final class Campaigns {
             return new \WP_Error('ppush_date', 'Data inválida.');
         }
         $ttl = max(60, min(604800, (int)($data['ttl'] ?? Core::settings()['default_ttl'])));
-        $created = $wpdb->insert(Core::table('campaigns'), [
+        $hash = null;
+        if (array_key_exists('idempotency_key', $data)) {
+            if (!is_string($data['idempotency_key']) || $data['idempotency_key'] === '' || strlen($data['idempotency_key']) > 512) {
+                return new \WP_Error('ppush_event', 'A chave do evento deve ser um texto não vazio de até 512 bytes.');
+            }
+            $hash = hash('sha256', $data['idempotency_key']);
+            $existing = self::existing($hash);
+            if ($existing) { self::kick(); return $existing; }
+        }
+        $values = [
             'creator_id' => get_current_user_id(),
             'title' => $title, 'message' => $message, 'url' => $url, 'image' => $image,
             'audience_type' => $type, 'audience_ids' => wp_json_encode($type === 'all' ? [] : $ids),
             'status' => 'scheduled', 'scheduled_at' => gmdate('Y-m-d H:i:s', max(time(), $scheduled)),
             'created_at' => Core::now(), 'ttl' => $ttl, 'last_error' => '',
-        ]);
+            'idempotency_hash' => $hash,
+        ];
+        // O índice único é a garantia final quando dois eventos chegam ao mesmo tempo.
+        $previous_errors = $hash !== null ? $wpdb->suppress_errors(true) : null;
+        try { $created = $wpdb->insert(Core::table('campaigns'), $values); }
+        finally { if ($hash !== null) { $wpdb->suppress_errors($previous_errors); } }
         if ($created === false) {
+            if ($hash !== null && ($existing = self::existing($hash))) { self::kick(); return $existing; }
             return new \WP_Error('ppush_database', 'Não foi possível criar a campanha.');
         }
         $id = (int)$wpdb->insert_id;
         self::kick();
         do_action('portal_push_campaign_created', $id);
         return $id;
+    }
+
+    private static function existing(string $hash): int {
+        global $wpdb;
+        return (int)$wpdb->get_var($wpdb->prepare('SELECT id FROM ' . Core::table('campaigns') . ' WHERE idempotency_hash=%s', $hash));
     }
 
     public static function portal_url(string $url): string|\WP_Error {

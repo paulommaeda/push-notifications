@@ -2,17 +2,17 @@
   "schema": 1,
   "name": "Portal Push — Pessoas e Perfis",
   "slug": "portal-push",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "homepage": "https://github.com/paulommaeda/push-notifications",
   "requires": "6.4",
   "requires_php": "8.2",
   "tested": "6.8.3",
-  "download_url": "https://raw.githubusercontent.com/paulommaeda/push-notifications/main/dist/portal-push-0.3.1.zip",
-  "sha256": "c8563533dbef8348becef75babeefa468fb9038ff7d144a8b393aca2a5b3ea6a",
-  "last_updated": "2026-10-21 10:52:53",
+  "download_url": "https://raw.githubusercontent.com/paulommaeda/push-notifications/main/dist/portal-push-0.4.0.zip",
+  "sha256": "ecbd4102ec5312e824e771d90f5c686c107c06575621fb30c7b4363335b93df2",
+  "last_updated": "2026-10-21 12:25:57",
   "sections": {
     "description": "<p>Push no navegador e no PWA instalado, com núcleo próprio e segmentação pelos usuários e papéis do WordPress.</p>",
     "installation": "<p>Instale o ZIP pelo painel e gere as chaves. Cada usuário entra no portal e ativa as notificações no dispositivo. A página com [portal_push] é opcional para gerenciar dispositivos.</p>",
-    "changelog": "<h4>0.3.1</h4><ul><li>Aguarda a instalação e ativa a atualização integrada do PWA após o clique do usuário.</li><li>Reparo pelo painel com verificação do arquivo/template gerado no servidor.</li><li>Recuperação de arquivos do PWA ausentes ou desatualizados, mesmo com a versão já registrada.</li><li>URL de registro do SuperPWA identifica a versão e a revisão da integração.</li></ul>"
+    "changelog": "<h4>0.4.0</h4><ul><li>Modelos e integrações no painel, com chave permanente, variáveis, público padrão e pausa.</li><li>Função portal_push_notify() e ação portal_push_notify para eventos de outros plugins.</li><li>event_id evita duplicidade por modelo, público e evento, com índice único no banco.</li><li>API portal_push_send() preservada e ampliada com idempotency_key opcional.</li><li>Guia INTEGRACOES.md com exemplos de usuários, papéis e adaptação de ganchos.</li></ul>"
   }
 }
