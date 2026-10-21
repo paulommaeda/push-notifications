@@ -17,17 +17,25 @@ function environment(options = {}) {
     querySelector: name => ({ '.ppush-status': status, '[data-ppush-enable]': enable, '[data-ppush-dismiss]': dismiss }[name] || null)
   };
   const storage = new Map(Object.entries(options.storage || {}));
-  let permissionRequests = 0, unsubscribed = 0, subscribed = 0;
+  let permissionRequests = 0, unsubscribed = 0, subscribed = 0, activations = 0;
   const registration = {
     scope,
     active: {
       scriptURL: options.own ? scope + '?portal_push_worker=1' : scope + 'pwa-sw.js',
       postMessage: (message, ports) => {
         messages.push(message);
+        if (options.replaceDuringProbe) setTimeout(() => { registration.active = integratedWorker(); }, 100);
         if (options.compatible !== false) ports[0].postMessage({ type: 'PORTAL_PUSH_READY', version: '0.3.0' });
       }
     },
-    update: async () => undefined,
+    update: async () => {
+      if (options.delayedInstall || options.waiting) {
+        const candidate = integratedWorker();
+        candidate.state = 'installing';
+        registration.installing = candidate;
+        setTimeout(() => { registration.installing = null; registration.waiting = candidate; candidate.state = 'installed'; }, options.delayedInstall ? 250 : 0);
+      }
+    },
     pushManager: {
       getSubscription: async () => options.subscription || null,
       subscribe: async input => {
@@ -36,6 +44,20 @@ function environment(options = {}) {
       }
     }
   };
+  function integratedWorker() {
+    const candidate = {
+      scriptURL: scope + 'superpwa-sw.js', state: 'activated',
+      postMessage: (message, ports) => {
+        messages.push(message);
+        if (message.type === 'PORTAL_PUSH_PING' && options.waitingCompatible !== false) ports[0].postMessage({ type: 'PORTAL_PUSH_READY', version: '0.3.1' });
+        if (message.type === 'PORTAL_PUSH_ACTIVATE') {
+          activations++;
+          setTimeout(() => { registration.waiting = null; registration.active = candidate; candidate.state = 'activated'; }, 150);
+        }
+      }
+    };
+    return candidate;
+  }
   if (options.subscription) options.subscription.unsubscribe = async () => { unsubscribed++; return true; };
   const notification = { permission: options.permission || 'default', requestPermission: async () => { permissionRequests++; return options.grant || 'granted'; } };
   const context = {
@@ -64,7 +86,7 @@ function environment(options = {}) {
   };
   vm.runInNewContext(source, context);
   return { handlers, root, status, enable, registrations, requests, messages, storage,
-    counts: () => ({ permissionRequests, unsubscribed, subscribed }) };
+    counts: () => ({ permissionRequests, unsubscribed, subscribed, activations }) };
 }
 (async () => {
   const checks = [];
@@ -80,7 +102,7 @@ function environment(options = {}) {
   checks.push('Clique reutiliza o registro compatível do PWA e associa a inscrição à conta autenticada');
   const unknown = environment({ compatible: false }); await flush(); await unknown.handlers.enable();
   assert.equal(unknown.registrations.length, 0); assert.equal(unknown.counts().subscribed, 0);
-  assert.match(unknown.status.textContent, /integrar o PWA/);
+  assert.match(unknown.status.textContent, /Reparar integração com o PWA/);
   checks.push('Worker sem integração não é substituído e não recebe inscrição inválida');
   const own = environment({ none: true, own: true }); await flush(); await own.handlers.enable();
   assert.equal(own.registrations.length, 1); assert.equal(own.registrations[0].input.scope, scope);
@@ -103,5 +125,22 @@ function environment(options = {}) {
   checks.push('Dispositivo pausado permanece pausado ao visitar outras páginas');
   quiet.handlers.dismiss(); assert.equal(quiet.root.hidden, true); assert.ok(Number(quiet.storage.get('test-dismiss')) > Date.now());
   checks.push('Pessoa pode dispensar o convite por sete dias sem conceder permissão');
+  const delayed = environment({ compatible: false, pwa: 'SuperPWA', delayedInstall: true }); await flush(); await delayed.handlers.enable();
+  assert.equal(delayed.counts().activations, 1); assert.equal(delayed.counts().subscribed, 1); assert.equal(delayed.registrations.length, 0);
+  checks.push('Atualização que termina depois de update() é aguardada e ativada no mesmo PWA após o clique');
+  const waiting = environment({ compatible: false, pwa: 'SuperPWA', waiting: true }); await flush(); await waiting.handlers.enable();
+  assert.equal(waiting.counts().activations, 1); assert.equal(waiting.requests.length, 1);
+  checks.push('Worker integrado aguardando ativação substitui a versão antiga sem reinstalar o PWA');
+  const foreignWaiting = environment({ compatible: false, waiting: true, waitingCompatible: false }); await flush(); await foreignWaiting.handlers.enable();
+  assert.equal(foreignWaiting.counts().activations, 0); assert.equal(foreignWaiting.requests.length, 0);
+  checks.push('Worker aguardando sem integração não recebe pedido de ativação nem inscrições');
+  const raced = environment({ compatible: false, replaceDuringProbe: true, pwa: 'SuperPWA' }); await flush(); await raced.handlers.enable();
+  assert.equal(raced.counts().subscribed, 1); assert.equal(raced.counts().activations, 0);
+  checks.push('Troca do worker durante a confirmação inicial é reconhecida sem erro de integração');
+  const silent = environment({ compatible: false, waiting: true, pwa: 'SuperPWA', permission: 'granted', storage: { 'test-optin': '1' } });
+  const until = Date.now() + 7000;
+  while (!silent.status.textContent.includes('Reparar integração') && Date.now() < until) await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(silent.counts().activations, 0); assert.equal(silent.requests.length, 0);
+  checks.push('Sincronização em segundo plano não força a ativação de uma atualização do PWA');
   console.log(JSON.stringify({ passed: checks.length, checks }));
 })().catch(error => { console.error(error); process.exitCode = 1; });

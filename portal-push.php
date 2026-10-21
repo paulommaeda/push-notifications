@@ -3,7 +3,7 @@
  * Plugin Name: Portal Push — Pessoas e Perfis
  * Plugin URI: https://github.com/paulommaeda/push-notifications
  * Description: Push no navegador e no PWA, por pessoa ou perfil dos usuários do WordPress.
- * Version: 0.3.0
+ * Version: 0.3.1
  * Author: Paulo Maeda
  * Author URI: https://paulomaeda.com
  * Requires at least: 6.4
@@ -15,7 +15,7 @@
 
 defined('ABSPATH') || exit;
 
-define('PPUSH_VERSION', '0.3.0');
+define('PPUSH_VERSION', '0.3.1');
 define('PPUSH_FILE', __FILE__);
 define('PPUSH_DIR', plugin_dir_path(__FILE__));
 define('PPUSH_URL', plugin_dir_url(__FILE__));

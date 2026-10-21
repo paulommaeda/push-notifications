@@ -4,13 +4,13 @@ Notificações **push na área de avisos do navegador ou do smartphone**, inclus
 
 Os destinatários são os **usuários do WordPress**. Os perfis são seus **papéis**, como Assinante e Editor, incluindo os personalizados já existentes no portal. O plugin não cria grupos próprios de destinatários nem altera os papéis ao enviar uma campanha.
 
-## Instalar a versão 0.3.0
+## Instalar a versão 0.3.1
 
-[Baixar o ZIP instalável](https://raw.githubusercontent.com/paulommaeda/push-notifications/main/dist/portal-push-0.3.0.zip)
+[Baixar o ZIP instalável](https://raw.githubusercontent.com/paulommaeda/push-notifications/main/dist/portal-push-0.3.1.zip)
 
 No WordPress: **Plugins → Adicionar plugin → Enviar plugin**, selecione o ZIP e ative. Para uma instalação existente, escolha substituir a versão atual. A partir da versão 0.2.0, também é possível receber a atualização pelo painel.
 
-Use `dist/portal-push-0.3.0.zip`, que contém a pasta `portal-push/` e as dependências prontas. O ZIP do botão Code do GitHub é o repositório de desenvolvimento, não o pacote de instalação.
+Use `dist/portal-push-0.3.1.zip`, que contém a pasta `portal-push/` e as dependências prontas. O ZIP do botão Code do GitHub é o repositório de desenvolvimento, não o pacote de instalação.
 
 ## Como funciona
 
@@ -37,7 +37,9 @@ Requer WordPress 6.4+, PHP 8.2+, HTTPS, OpenSSL, cURL e mbstring. O ZIP inclui a
 
 ## PWA e celulares
 
-PWA for WP e SuperPWA continuam responsáveis pelo aplicativo, manifesto e navegação. O Portal Push acrescenta os eventos de notificação ao worker deles. Depois da atualização, abra o painel uma vez e feche/reabra todas as janelas do portal/PWA para atualizar o worker. O cliente verifica se o worker ativo já possui a integração antes de cadastrar o dispositivo.
+PWA for WP e SuperPWA continuam responsáveis pelo aplicativo, manifesto e navegação. O Portal Push acrescenta os eventos de notificação ao worker deles. Depois da atualização, abra o painel uma vez. Ao clicar em **Ativar notificações**, o cliente aguarda a instalação do novo componente e solicita sua ativação somente se ele confirmar a integração com o Portal Push.
+
+Se aparecer o aviso de integração pendente, use **Portal Push → Configurações → Reparar integração com o PWA**. O botão regenera e verifica o arquivo/template no servidor e renova a URL de registro do SuperPWA. Se houver cache/CDN na hospedagem, limpe o cache dos arquivos do PWA; reabra o aplicativo e tente a ativação. O diagnóstico do painel confirma o arquivo local, não o estado do celular ou de uma CDN.
 
 Outros PWAs exigem integrar o módulo conforme [LEIA-ME.md](LEIA-ME.md). Um worker sem integração não é substituído. No iPhone/iPad, use iOS/iPadOS 16.4+ e abra o portal pelo ícone adicionado à Tela de Início antes de autorizar os avisos.
 

@@ -6,6 +6,10 @@
     if (event.data && event.data.type === 'PORTAL_PUSH_PING' && event.ports && event.ports[0]) {
       event.ports[0].postMessage({ type: 'PORTAL_PUSH_READY', version: self.PortalPushWorker });
     }
+    // Ativação solicitada apenas depois do clique de autorização no portal.
+    if (event.data && event.data.type === 'PORTAL_PUSH_ACTIVATE') {
+      event.waitUntil(self.skipWaiting());
+    }
   });
 
 self.addEventListener('push', event => {

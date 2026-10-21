@@ -2,17 +2,17 @@
   "schema": 1,
   "name": "Portal Push — Pessoas e Perfis",
   "slug": "portal-push",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "homepage": "https://github.com/paulommaeda/push-notifications",
   "requires": "6.4",
   "requires_php": "8.2",
   "tested": "6.8.3",
-  "download_url": "https://raw.githubusercontent.com/paulommaeda/push-notifications/main/dist/portal-push-0.3.0.zip",
-  "sha256": "b77c14da17ddaa25226f6d713d1a607025a11c6d771bcea68ec5fd0ecbd7193c",
-  "last_updated": "2026-10-20 15:15:48",
+  "download_url": "https://raw.githubusercontent.com/paulommaeda/push-notifications/main/dist/portal-push-0.3.1.zip",
+  "sha256": "c8563533dbef8348becef75babeefa468fb9038ff7d144a8b393aca2a5b3ea6a",
+  "last_updated": "2026-10-21 10:52:53",
   "sections": {
     "description": "<p>Push no navegador e no PWA instalado, com núcleo próprio e segmentação pelos usuários e papéis do WordPress.</p>",
     "installation": "<p>Instale o ZIP pelo painel e gere as chaves. Cada usuário entra no portal e ativa as notificações no dispositivo. A página com [portal_push] é opcional para gerenciar dispositivos.</p>",
-    "changelog": "<h4>0.3.0</h4><ul><li>Segmentação pelos papéis nativos e personalizados dos usuários do WordPress.</li><li>Cadastro e edição de contas nas telas nativas; remoção dos grupos próprios da interface.</li><li>Botão de ativação nas páginas para usuários conectados; página de dispositivos opcional.</li><li>Integração dos eventos push ao service worker de PWA for WP e SuperPWA.</li><li>Verificação de suporte antes de usar um worker existente, sem substituí-lo.</li><li>Migração preserva contas, papéis, chaves e dispositivos; cancela pendências dos antigos grupos.</li></ul>"
+    "changelog": "<h4>0.3.1</h4><ul><li>Aguarda a instalação e ativa a atualização integrada do PWA após o clique do usuário.</li><li>Reparo pelo painel com verificação do arquivo/template gerado no servidor.</li><li>Recuperação de arquivos do PWA ausentes ou desatualizados, mesmo com a versão já registrada.</li><li>URL de registro do SuperPWA identifica a versão e a revisão da integração.</li></ul>"
   }
 }

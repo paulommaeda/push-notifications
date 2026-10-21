@@ -98,6 +98,10 @@ final class Admin {
                 }
                 Updater::set_auto(!empty($data['auto_updates']));
                 self::finish('settings', 'Preferência de atualização automática salva no WordPress.');
+            case 'pwa_repair':
+                $result = Pwa::repair();
+                if (is_wp_error($result)) { self::fail('settings', $result); }
+                self::finish('settings', 'Integração do PWA regenerada e verificada no servidor. Reabra o aplicativo e clique em Ativar notificações. Se a hospedagem tiver cache/CDN, limpe o cache dos arquivos do PWA.');
             case 'updates_check':
                 if (!current_user_can('update_plugins')) {
                     self::finish('settings', 'Sua conta não pode verificar atualizações de plugins.', true);
@@ -328,6 +332,12 @@ final class Admin {
         }
         echo '<hr><h2>Gerenciamento opcional de dispositivos</h2>';
         echo '<p>PWA: <strong>' . esc_html(Pwa::provider() ?: 'Worker de notificações do Portal Push') . '</strong>. ' . (Pwa::provider() ? 'A integração é acrescentada ao worker existente. Depois de atualizar, feche e reabra o aplicativo para ativar a nova versão.' : 'Se utilizar outro plugin de PWA, integre os eventos de push ao worker dele conforme o guia do plugin.') . '</p>';
+        if (Pwa::provider() && current_user_can('manage_options')) {
+            $pwa = Pwa::status();
+            echo '<p>Integração no servidor: <strong>' . ($pwa['ready'] ? 'Pronta' : 'Precisa de reparo') . '</strong> · ' . esc_html($pwa['mode']) . '.</p>';
+            self::form('pwa_repair');
+            echo '<button class="button">Reparar integração com o PWA</button></form><p class="description">Regenera e verifica o componente de notificações do aplicativo. Preserva as chaves e os dispositivos cadastrados.</p>';
+        }
         if ($settings['portal_page'] && get_post_status((int)$settings['portal_page']) === 'publish') {
             echo '<p><a class="button" href="' . esc_url(get_permalink((int)$settings['portal_page'])) . '">Abrir página de dispositivos</a></p>';
         } else {

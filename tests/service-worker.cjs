@@ -43,10 +43,12 @@ async function dispatch(name, data = {}) {
   await dispatch('notificationclick', { notification: { close: () => {}, data: { url: 'javascript:alert(1)', clickUrl: 'https://attacker.test/', clickToken: 'f'.repeat(64) } } });
   assert.equal(opened[1], scope); assert.equal(tracked.length, 1); checks.push('Clique não abre endereço inseguro nem envia o token a terceiros');
   const pwaListeners = {}, pwaNotifications = [];
+  let pwaActivated = false;
   const pwaSelf = {
     ...context.self,
     PortalPushWorker: undefined,
     PortalPushStandalone: undefined,
+    skipWaiting: async () => { pwaActivated = true; },
     addEventListener: (name, callback) => { assert.equal(pwaListeners[name], undefined, 'Sem listener duplicado'); pwaListeners[name] = callback; },
     registration: { scope, showNotification: async (title, options) => pwaNotifications.push({ title, options }) }
   };
@@ -66,6 +68,13 @@ async function dispatch(name, data = {}) {
   pwaListeners.notificationclick({ notification: { data: { url: scope }, close: () => { otherClosed = true; } } });
   assert.equal(pwaNotifications.length, 1); assert.equal(otherClosed, false);
   checks.push('Integração ignora mensagens e cliques de outros serviços');
+  assert.equal(pwaActivated, false);
+  pwaListeners.message({ data: { type: 'UNRELATED' } }); assert.equal(pwaActivated, false);
+  checks.push('Módulo incorporado não força atualização ao carregar ou receber mensagens desconhecidas');
+  let activate;
+  pwaListeners.message({ data: { type: 'PORTAL_PUSH_ACTIVATE' }, waitUntil: promise => { activate = promise; } });
+  await activate; assert.equal(pwaActivated, true);
+  checks.push('Pedido explícito do cliente ativa a atualização do worker integrado');
   const report = { passed: checks.length, checks };
 
   console.log(JSON.stringify(report));

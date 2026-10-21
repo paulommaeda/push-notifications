@@ -66,11 +66,48 @@
     if (!script) { resolve(false); return; }
     const channel = new MessageChannel();
     const finish = value => { clearTimeout(timer); channel.port1.close(); channel.port2.close(); resolve(value); };
-    const timer = setTimeout(() => finish(false), 1200);
+    const timer = setTimeout(() => finish(false), 2000);
     channel.port1.onmessage = event => finish(event.data && event.data.type === 'PORTAL_PUSH_READY');
     try { script.postMessage({ type: 'PORTAL_PUSH_PING' }, [channel.port2]); } catch { finish(false); }
   });
-  const worker = async () => {
+  const updatePwa = async (reg, activate, previous) => {
+    message('Atualizando as notificações do aplicativo…');
+    let timer;
+    try {
+      // update() inicia a atualização; instalação e ativação continuam depois da promessa.
+      await Promise.race([
+        reg.update(),
+        new Promise((resolve, reject) => { timer = setTimeout(() => reject(new Error('Atualização indisponível')), 8000); })
+      ]);
+    } catch { /* Um componente já baixado ainda pode estar aguardando ativação. */ }
+    finally { clearTimeout(timer); }
+    const deadline = Date.now() + 15000;
+    const settle = Date.now() + 500;
+    let requested;
+    const checked = new Set();
+    const checkedActive = new Set([previous]);
+    while (Date.now() < deadline) {
+      if (reg.active && !checkedActive.has(reg.active)) {
+        checkedActive.add(reg.active);
+        if (await supportsPush(reg.active)) return true;
+      }
+      const waiting = reg.waiting;
+      if (waiting && !checked.has(waiting)) {
+        checked.add(waiting);
+        if (await supportsPush(waiting)) {
+          if (!activate) return false;
+          // Só o componente que confirmou a integração recebe o pedido de ativação.
+          waiting.postMessage({ type: 'PORTAL_PUSH_ACTIVATE' });
+          requested = waiting;
+        }
+      }
+      if (requested && requested.state === 'redundant') return false;
+      if (!reg.installing && !requested && (!waiting || checked.has(waiting)) && Date.now() >= settle) return false;
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return false;
+  };
+  const worker = async (activate = false) => {
     if (registration) return registration;
     let existing = await navigator.serviceWorker.getRegistration(location.href);
     if (!existing) existing = await navigator.serviceWorker.getRegistration(config.scope);
@@ -88,10 +125,10 @@
       const expected = new URL(config.worker);
       if (existingURL.origin !== expected.origin || existingURL.pathname !== expected.pathname || existingURL.searchParams.get('portal_push_worker') !== '1') {
         await waitActive(existing);
-        if (!await supportsPush(existing.active)) {
-          try { await existing.update(); } catch { /* A próxima visita pode concluir a atualização. */ }
-          if (!await supportsPush(existing.active)) {
-            throw new Error('O PWA precisa atualizar o recebimento de avisos. Feche todas as janelas do portal e abra novamente. Se persistir, avise a administração para integrar o PWA.');
+        const active = existing.active;
+        if (!await supportsPush(active)) {
+          if (!await updatePwa(existing, activate, active)) {
+            throw new Error('O aplicativo ainda não concluiu a atualização dos avisos. Feche e reabra o PWA e toque em Ativar notificações. Se continuar, peça à administração para usar “Reparar integração com o PWA” nas configurações do Portal Push.');
           }
         }
         registration = existing;
@@ -138,7 +175,7 @@
     }
   };
   const sync = async reactivate => {
-    const reg = await worker();
+    const reg = await worker(reactivate);
     let sub = await reg.pushManager.getSubscription();
     if (sub && sub.options && sub.options.applicationServerKey) {
       const current = new Uint8Array(sub.options.applicationServerKey);

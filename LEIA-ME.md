@@ -1,4 +1,4 @@
-# Portal Push — Guia da versão 0.3.0
+# Portal Push — Guia da versão 0.3.1
 
 ## Onde o aviso aparece
 
@@ -22,7 +22,7 @@ O público é calculado quando a campanha fica disponível para envio. Antes de 
 
 ## Instalar e configurar
 
-1. Envie `portal-push-0.3.0.zip` por **Plugins → Adicionar plugin → Enviar plugin** e ative. Se houver versão anterior, substitua pelo painel.
+1. Envie `portal-push-0.3.1.zip` por **Plugins → Adicionar plugin → Enviar plugin** e ative. Se houver versão anterior, substitua pelo painel.
 2. Abra **Portal Push → Configurações**, confira o e-mail técnico e clique em **Gerar chaves no servidor**. O e-mail identifica o emissor; essa configuração não envia e-mails.
 3. Confira os usuários e papéis existentes no WordPress. Para novas contas, use **Usuários → Adicionar novo**.
 4. Cada pessoa entra no portal e clica em **Ativar notificações** no dispositivo em que quer receber os avisos. A solicitação de permissão aparece depois desse clique.
@@ -46,7 +46,9 @@ O ZIP inclui as dependências isoladas em `PortalPushVendor`; não precisa execu
 
 ## PWA instalado
 
-**PWA for WP e SuperPWA:** o Portal Push incorpora seu módulo de eventos ao worker existente pelos filtros de geração desses plugins. O aplicativo continua usando seu manifesto, cache e navegação. Ao abrir o painel depois da atualização, os arquivos de worker são regenerados. Feche e reabra todas as janelas do portal/aplicativo para ativar a nova versão; limpe o cache do worker na hospedagem/CDN se ele ainda servir o arquivo antigo.
+**PWA for WP e SuperPWA:** o Portal Push incorpora seu módulo de eventos ao worker existente pelos filtros de geração desses plugins. O aplicativo continua usando seu manifesto, cache e navegação. Ao abrir o painel depois da atualização, os arquivos de worker são regenerados e verificados. O cliente aguarda a instalação do novo componente; depois do clique em **Ativar notificações**, solicita a ativação apenas do worker que confirmou a integração. A sincronização em segundo plano não força essa ativação.
+
+**Se aparecer “O aplicativo ainda não concluiu a atualização dos avisos”:** atualize para 0.3.1 ou posterior e use **Portal Push → Configurações → Reparar integração com o PWA**. O reparo verifica o arquivo/template atual, detecta um arquivo antigo ou ausente mesmo quando a versão já estava registrada e preserva chaves, usuários e inscrições. A URL de registro do SuperPWA recebe a versão/revisão para identificar a atualização. Se a hospedagem tiver cache/CDN, limpe o cache dos arquivos do PWA; reabra o aplicativo e clique em **Ativar notificações**. O estado “Pronta” no painel verifica o componente no servidor; o celular e uma CDN ainda podem estar usando uma versão anterior.
 
 Antes de cadastrar o dispositivo, o cliente pede uma confirmação ao worker ativo. Se ele ainda não tiver o módulo, a inscrição é interrompida com uma orientação de atualização. O plugin não substitui um worker de outro PWA. Mantenha apenas um emissor push nesse mesmo registro; ao migrar de outro serviço, o clique explícito de ativação troca a inscrição para a chave VAPID local.
 
@@ -56,7 +58,7 @@ Antes de cadastrar o dispositivo, o cliente pede uma confirmação ao worker ati
 $worker_javascript = \PauloMaeda\PortalPush\Pwa::inject($worker_javascript);
 ```
 
-Use esse código no filtro de geração do worker do seu PWA, com o Portal Push carregado, e regenere o arquivo. O módulo contém os eventos de push, clique e confirmação de suporte; não registra eventos de instalação/ativação nem assume o cache. Ele ignora mensagens e cliques que não pertençam ao Portal Push. A integração deve ser homologada com o PWA específico do portal.
+Use esse código no filtro de geração do worker do seu PWA, com o Portal Push carregado, e regenere o arquivo. O módulo contém os eventos de push, clique e confirmação de suporte. Não registra eventos de instalação/ativação nem assume o cache; atende um pedido explícito do cliente para ativar uma atualização integrada depois do clique de autorização. Ele ignora mensagens e cliques que não pertençam ao Portal Push. A integração deve ser homologada com o PWA específico do portal.
 
 **Sem outro plugin PWA:** o Portal Push fornece um worker para notificações e um manifesto básico com abertura independente. Não acrescenta navegação offline. Configure o ícone do site no WordPress para fornecer os ícones do manifesto.
 

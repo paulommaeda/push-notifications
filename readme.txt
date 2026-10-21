@@ -4,7 +4,7 @@ Tags: push, notifications, portal, web-push
 Requires at least: 6.4
 Tested up to: 6.8.3
 Requires PHP: 8.2
-Stable tag: 0.3.0
+Stable tag: 0.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -34,7 +34,7 @@ O cadastro, as chaves VAPID, as campanhas, a fila e os relatórios ficam na sua 
 == Installation ==
 
 1. Acesse Plugins > Adicionar plugin > Enviar plugin.
-2. Envie portal-push-0.3.0.zip e ative.
+2. Envie portal-push-0.3.1.zip e ative.
 3. Abra Portal Push > Configurações e gere as chaves de envio.
 4. Confira as contas e os papéis em Usuários no WordPress.
 5. Cada pessoa entra no portal e clica em Ativar notificações no próprio dispositivo.
@@ -67,6 +67,12 @@ Não. O serviço do navegador aceitou a requisição. O dispositivo pode estar o
 PWA for WP e SuperPWA recebem os eventos de push em seu próprio worker. Feche e reabra o aplicativo depois da atualização. Outros PWAs precisam incorporar o módulo documentado no guia; um worker sem integração é preservado. O filtro portal_push_disable_manifest permite desabilitar o manifesto básico.
 
 == Changelog ==
+
+= 0.3.1 =
+* Aguarda a instalação e ativa a atualização integrada do PWA após o clique do usuário.
+* Reparo pelo painel com verificação do arquivo/template gerado no servidor.
+* Recuperação de arquivos do PWA ausentes ou desatualizados, mesmo com a versão já registrada.
+* URL de registro do SuperPWA identifica a versão e a revisão da integração.
 
 = 0.3.0 =
 * Segmentação pelos papéis nativos e personalizados dos usuários do WordPress.

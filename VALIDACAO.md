@@ -1,6 +1,6 @@
-# Validação — Portal Push 0.3.0
+# Validação — Portal Push 0.3.1
 
-Data: 20/10/2026. Ambiente: WordPress 6.8.3, PHP 8.3.6 e banco local pelo plugin oficial SQLite Database Integration.
+Data: 21/10/2026. Ambiente: WordPress 6.8.3, PHP 8.3.6 e banco local pelo plugin oficial SQLite Database Integration.
 
 ## Conjuntos de verificação
 
@@ -8,10 +8,11 @@ Data: 20/10/2026. Ambiente: WordPress 6.8.3, PHP 8.3.6 e banco local pelo plugin
 |---|---:|---|
 | Integração do núcleo | 53 | Contas WordPress, múltiplos papéis, inscrições, propriedade dos dispositivos, públicos, fila, horários, novas tentativas, logout e privacidade. |
 | Papéis e migração | 17 | Papéis padrão/personalizados, mudança de papel, rejeição de públicos inválidos, cancelamento de pendências legadas e preservação de contas, papéis e chaves. |
-| Painel e endpoints HTTP | 38 | Sessões/cookies reais, seis telas, público por papel, preferências de recebimento, CSRF, autorização REST, convite nas páginas e ausência de promoção de usuários por campos forjados. |
-| Eventos do worker | 12 | `showNotification`, destino seguro do clique, token, confirmação ao cliente, integração sem assumir instalação/cache e isolamento de mensagens de outros serviços. |
-| Ativação no cliente | 10 | Permissão somente por clique, registro existente do PWA, bloqueio de worker sem integração, chave VAPID, pausa e orientação para iPhone. |
+| Painel e endpoints HTTP | 42 | Sessões/cookies reais, seis telas, público por papel, preferências de recebimento, CSRF, autorização REST, convite nas páginas e ausência de promoção de usuários por campos forjados. |
+| Eventos do worker | 14 | `showNotification`, destino seguro do clique, token, confirmação ao cliente, integração sem assumir instalação/cache e isolamento de mensagens de outros serviços. |
+| Ativação no cliente | 15 | Permissão somente por clique, registro existente do PWA, bloqueio de worker sem integração, chave VAPID, pausa e orientação para iPhone. |
 | Fontes reais dos PWAs | 10 | Geração de templates e arquivos estáticos com SuperPWA 2.2.49 e PWA for WP 1.7.88.2, manutenção do código do PWA e ausência de integração duplicada. |
+| Reparo com SuperPWA ativo | 12 | Arquivo real, template dinâmico, arquivo antigo/ausente, revisão na URL, autorização e preservação dos dados. |
 | Criptografia independente | 2 | Decifragem RFC 8291/AES-GCM e verificação VAPID ES256 com Python/cryptography. |
 | Atualizador GitHub | 37 | Manifesto, cache, falhas de rede, origem do ZIP, SHA-256, rejeição de pacote adulterado e instalação pelo `Plugin_Upgrader`. |
 
@@ -26,11 +27,19 @@ node tests/service-worker.cjs
 node tests/frontend.cjs
 # Somente em WordPress descartável em localhost:
 wp eval-file tests/roles.php
+# Com SuperPWA ativo na instalação descartável:
+wp eval-file tests/superpwa.php
 # Altera os arquivos da cópia instalada; execute somente em ambiente descartável:
 wp eval-file tests/updater.php
 ```
 
 O teste de atualização deve ser chamado a partir do repositório de desenvolvimento, separado da cópia instalada no WordPress, com `dist/` e `updates/` presentes.
+
+## Correção 0.3.1
+
+O fluxo anterior verificava o worker ativo logo após `registration.update()` e podia recusar a inscrição enquanto a versão nova ainda estava instalando ou aguardando ativação. Foram reproduzidos e verificados os casos de instalação demorada, worker integrado aguardando ativação, troca do worker durante a confirmação inicial, worker sem integração e sincronização sem gesto do usuário.
+
+A correção aguarda a instalação e solicita a ativação integrada após o clique. O painel oferece reparo com verificação do arquivo/template local e revisão na URL do SuperPWA. Os testes HTTP também verificam o botão, o resultado da operação, o nonce e a restrição de acesso. O resultado precisa ser validado no PWA/dispositivo do usuário; o teste local não identifica se a hospedagem/CDN serve uma cópia antiga.
 
 ## Homologação no portal
 

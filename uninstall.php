@@ -13,7 +13,7 @@ foreach (['deliveries', 'campaigns', 'memberships', 'subscriptions', 'profiles']
 delete_site_transient('ppush_github_manifest_v1');
 $auto = (array)get_site_option('auto_update_plugins', []);
 update_site_option('auto_update_plugins', array_values(array_diff($auto, [plugin_basename(__DIR__ . '/portal-push.php')])));
-foreach (['ppush_settings', 'ppush_vapid', 'ppush_db_version', 'ppush_queue_lock', 'ppush_queue_last_run', 'ppush_update_status', 'ppush_pwa_worker_version', 'ppush_legacy_campaigns_cancelled'] as $option) {
+foreach (['ppush_settings', 'ppush_vapid', 'ppush_db_version', 'ppush_queue_lock', 'ppush_queue_last_run', 'ppush_update_status', 'ppush_pwa_worker_version', 'ppush_pwa_worker_revision', 'ppush_legacy_campaigns_cancelled'] as $option) {
     delete_option($option);
 }
 delete_metadata('user', 0, '_ppush_disabled', '', true);
